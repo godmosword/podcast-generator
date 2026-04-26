@@ -1,8 +1,8 @@
 import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from "lucide-react";
 import { AudioSettings } from "../components/AudioSettings";
+import { ClassicsSelector } from "../components/ClassicsSelector";
 import { GenerateProgress } from "../components/GenerateProgress";
 import { HostCountPicker } from "../components/HostCountPicker";
-import { ScriptEditor } from "../components/ScriptEditor";
 import { StepNav } from "../components/StepNav";
 import { VoiceSlotRow } from "../components/VoiceSlotRow";
 import { useStudio } from "../hooks/useStudio";
@@ -51,12 +51,21 @@ export function Studio() {
 
         <div className="main-flow">
           {studio.step === 1 && (
-            <ScriptEditor
+            <ClassicsSelector
               chars={studio.stats.chars}
+              classicsError={studio.classicsError}
+              classicsLoading={studio.classicsLoading}
+              classics={studio.filteredClassics}
               detectedHosts={studio.stats.detectedHosts}
+              durationFilter={studio.durationFilter}
               minutes={studio.stats.minutes}
-              onChange={studio.setScript}
+              mode={studio.scriptMode}
+              onDurationFilter={studio.setDurationFilter}
+              onModeChange={studio.setScriptMode}
+              onScriptChange={studio.setScript}
+              onSelectClassic={studio.selectClassic}
               script={studio.script}
+              selectedClassicId={studio.selectedClassicId}
             />
           )}
 

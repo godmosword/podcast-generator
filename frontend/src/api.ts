@@ -97,3 +97,35 @@ export async function previewVoice(text: string, voice: string): Promise<string>
 export function absoluteApiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
+
+export type DurationCategory = "short" | "medium" | "long";
+
+export type ClassicEntry = {
+  id: string;
+  title: string;
+  author: string;
+  category: string;
+  duration_category: DurationCategory;
+  duration_minutes: number;
+  language: string;
+  description: string;
+  speaker_count: number;
+  tags: string[];
+};
+
+export async function fetchClassicsCatalog(): Promise<ClassicEntry[]> {
+  const response = await fetch(`${API_BASE}/api/classics`);
+  if (!response.ok) {
+    throw new Error("Classics catalog request failed.");
+  }
+  return response.json();
+}
+
+export async function fetchClassicScript(classicId: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/api/classics/${classicId}/script`);
+  if (!response.ok) {
+    throw new Error("Classic script request failed.");
+  }
+  const data = (await response.json()) as { id: string; script: string };
+  return data.script;
+}

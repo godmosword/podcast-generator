@@ -1,0 +1,98 @@
+[
+  {
+    "id": "snow-white",
+    "title": "白雪公主",
+    "author": "格林兄弟",
+    "category": "western-fairy-tale",
+    "duration_category": "short",
+    "duration_minutes": 8,
+    "language": "zh-TW",
+    "description": "善良的白雪公主被惡毒繼母陷害，與七個小矮人共同生活的感人童話。",
+    "speaker_count": 2,
+    "tags": ["童話", "格林", "西方經典"]
+  },
+  {
+    "id": "three-little-pigs",
+    "title": "三隻小豬",
+    "author": "英國民間故事",
+    "category": "western-fairy-tale",
+    "duration_category": "short",
+    "duration_minutes": 7,
+    "language": "zh-TW",
+    "description": "三兄弟各自建造房屋，面對大野狼威脅的智慧與勇氣故事。",
+    "speaker_count": 2,
+    "tags": ["童話", "寓言", "西方經典"]
+  },
+  {
+    "id": "ugly-duckling",
+    "title": "醜小鴨",
+    "author": "漢斯·克里斯汀·安徒生",
+    "category": "western-fairy-tale",
+    "duration_category": "short",
+    "duration_minutes": 9,
+    "language": "zh-TW",
+    "description": "被誤解排斥的小鴨子，歷經磨難最終蛻變為美麗天鵝的成長故事。",
+    "speaker_count": 2,
+    "tags": ["童話", "安徒生", "成長"]
+  },
+  {
+    "id": "little-prince",
+    "title": "小王子·玫瑰的故事",
+    "author": "安托萬·德·聖修伯里",
+    "category": "western-classic",
+    "duration_category": "medium",
+    "duration_minutes": 13,
+    "language": "zh-TW",
+    "description": "小王子離開他的星球，探索世界並思索愛、責任與孤獨的哲學故事。",
+    "speaker_count": 2,
+    "tags": ["哲學", "法國文學", "愛與孤獨"]
+  },
+  {
+    "id": "old-man-sea",
+    "title": "老人與海·初遇",
+    "author": "海明威",
+    "category": "western-classic",
+    "duration_category": "medium",
+    "duration_minutes": 15,
+    "language": "zh-TW",
+    "description": "老漁夫聖地亞哥獨自出海，與巨大馬林魚展開生死搏鬥，展現人類不屈的意志。",
+    "speaker_count": 2,
+    "tags": ["諾貝爾文學", "海明威", "毅力"]
+  },
+  {
+    "id": "journey-west",
+    "title": "西遊記·大鬧天宮",
+    "author": "吳承恩",
+    "category": "zh-classic",
+    "duration_category": "medium",
+    "duration_minutes": 16,
+    "language": "zh-TW",
+    "description": "孫悟空習得神通後大鬧天宮，展現桀驁不馴的自由精神與無畏的反抗力量。",
+    "speaker_count": 2,
+    "tags": ["神話", "中國四大名著", "冒險"]
+  },
+  {
+    "id": "three-kingdoms",
+    "title": "三國演義·赤壁之戰",
+    "author": "羅貫中",
+    "category": "zh-classic",
+    "duration_category": "long",
+    "duration_minutes": 22,
+    "language": "zh-TW",
+    "description": "孫劉聯盟對抗曹操，草船借箭、東風助火，史上最著名的以少勝多之戰。",
+    "speaker_count": 2,
+    "tags": ["歷史", "中國四大名著", "謀略"]
+  },
+  {
+    "id": "dream-red-chamber",
+    "title": "紅樓夢·初入賈府",
+    "author": "曹雪芹",
+    "category": "zh-classic",
+    "duration_category": "long",
+    "duration_minutes": 24,
+    "language": "zh-TW",
+    "description": "林黛玉初入賈府，感受榮華富貴背後的人情冷暖與命運無常。",
+    "speaker_count": 2,
+    "tags": ["愛情", "中國四大名著", "悲劇"]
+  }
+]
