@@ -4,6 +4,7 @@ import io
 
 import edge_tts
 
+from config import base_voice_id
 from providers.base import AbstractTTSProvider
 
 
@@ -14,7 +15,7 @@ class EdgeTTSProvider(AbstractTTSProvider):
         speed = float(kwargs.get("speed", 1.0))
         rate = kwargs.get("rate") or _speed_to_rate(speed)
         pitch = str(kwargs.get("pitch", "+0Hz"))
-        communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
+        communicate = edge_tts.Communicate(text, base_voice_id(voice), rate=rate, pitch=pitch)
         buffer = io.BytesIO()
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":

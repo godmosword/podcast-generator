@@ -9,6 +9,7 @@ from pydub import AudioSegment
 from pydub.generators import Sine
 
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track, list_bgm_tracks
+from backend.config import VOICE_CATALOG
 from backend.jobs import Job, jobs
 from backend.main import app
 from config import Config, voice_pitch
@@ -46,9 +47,20 @@ class RoleMapperTests(unittest.TestCase):
 
 
 class TTSConfigTests(unittest.TestCase):
+    def test_voice_catalog_is_limited_to_requested_languages(self) -> None:
+        groups = {
+            "zh-TW": [voice for voice in VOICE_CATALOG if voice["language"] == "zh-TW"],
+            "English": [voice for voice in VOICE_CATALOG if voice["language"].startswith("en-")],
+            "ja-JP": [voice for voice in VOICE_CATALOG if voice["language"] == "ja-JP"],
+        }
+
+        self.assertEqual({voice["language"] for voice in VOICE_CATALOG}, {"zh-TW", "en-US", "en-GB", "ja-JP"})
+        self.assertEqual({key: len(value) for key, value in groups.items()}, {"zh-TW": 8, "English": 8, "ja-JP": 8})
+
     def test_child_voice_pitch_profiles(self) -> None:
-        self.assertEqual(voice_pitch("zh-CN-XiaoyiNeural"), "+2Hz")
-        self.assertEqual(voice_pitch("zh-CN-YunxiaNeural"), "+3Hz")
+        self.assertEqual(voice_pitch("zh-TW-YunJheNeural__boy-1"), "+7Hz")
+        self.assertEqual(voice_pitch("zh-TW-HsiaoYuNeural__girl-2"), "+10Hz")
+        self.assertEqual(voice_pitch("ja-JP-KeitaNeural__adult-male-2"), "-2Hz")
         self.assertEqual(voice_pitch("zh-TW-HsiaoChenNeural"), "+0Hz")
 
 

@@ -16,28 +16,32 @@ import {
 
 export type VoiceId =
   // 繁體中文
+  | "zh-TW-YunJheNeural__adult-male-2"
+  | "zh-TW-HsiaoChenNeural__girl-1"
+  | "zh-TW-HsiaoYuNeural__girl-2"
+  | "zh-TW-YunJheNeural__boy-1"
+  | "zh-TW-YunJheNeural__boy-2"
   | "zh-TW-HsiaoChenNeural"
   | "zh-TW-YunJheNeural"
   | "zh-TW-HsiaoYuNeural"
-  // 簡體中文
-  | "zh-CN-YunxiNeural"
-  | "zh-CN-XiaoxiaoNeural"
-  | "zh-CN-XiaoyiNeural"
-  | "zh-CN-YunxiaNeural"
   // 英語
-  | "en-US-JennyNeural"
-  | "en-US-GuyNeural"
-  | "en-GB-SoniaNeural"
+  | "en-US-AndrewNeural"
+  | "en-US-BrianNeural"
+  | "en-US-AvaNeural"
+  | "en-US-EmmaNeural"
+  | "en-US-RogerNeural__boy-1"
+  | "en-US-AndrewNeural__boy-2"
+  | "en-US-AnaNeural"
+  | "en-GB-MaisieNeural__girl-2"
   // 日語
   | "ja-JP-NanamiNeural"
   | "ja-JP-KeitaNeural"
-  // 韓語
-  | "ko-KR-SunHiNeural"
-  | "ko-KR-InJoonNeural"
-  // 法語
-  | "fr-FR-DeniseNeural"
-  // 西班牙語
-  | "es-ES-ElviraNeural";
+  | "ja-JP-KeitaNeural__adult-male-2"
+  | "ja-JP-NanamiNeural__adult-female-2"
+  | "ja-JP-KeitaNeural__boy-1"
+  | "ja-JP-KeitaNeural__boy-2"
+  | "ja-JP-NanamiNeural__girl-1"
+  | "ja-JP-NanamiNeural__girl-2";
 
 export type VoiceSlot = {
   id: number;
@@ -56,22 +60,30 @@ export const voices: Array<{
   langLabel: string;
   tone: string;
 }> = [
-  { id: "zh-TW-HsiaoChenNeural", label: "雅琪", language: "zh-TW", langLabel: "繁體中文", tone: "清亮穩定" },
-  { id: "zh-TW-YunJheNeural",    label: "建宏", language: "zh-TW", langLabel: "繁體中文", tone: "溫和低頻" },
-  { id: "zh-TW-HsiaoYuNeural",   label: "靜怡", language: "zh-TW", langLabel: "繁體中文", tone: "親切柔和" },
-  { id: "zh-CN-YunxiNeural",     label: "雲希", language: "zh-CN", langLabel: "簡體中文", tone: "年輕清晰" },
-  { id: "zh-CN-XiaoxiaoNeural",  label: "曉曉", language: "zh-CN", langLabel: "簡體中文", tone: "溫暖親切" },
-  { id: "zh-CN-XiaoyiNeural",    label: "小女孩", language: "zh-CN", langLabel: "簡體中文", tone: "活潑口語" },
-  { id: "zh-CN-YunxiaNeural",    label: "小男孩", language: "zh-CN", langLabel: "簡體中文", tone: "可愛童聲" },
-  { id: "en-US-JennyNeural",     label: "Jenny", language: "en-US", langLabel: "English (US)", tone: "friendly" },
-  { id: "en-US-GuyNeural",       label: "Guy",   language: "en-US", langLabel: "English (US)", tone: "casual" },
-  { id: "en-GB-SoniaNeural",     label: "Sonia", language: "en-GB", langLabel: "English (UK)", tone: "formal" },
-  { id: "ja-JP-NanamiNeural",    label: "Nanami", language: "ja-JP", langLabel: "日本語", tone: "gentle" },
-  { id: "ja-JP-KeitaNeural",     label: "Keita",  language: "ja-JP", langLabel: "日本語", tone: "natural" },
-  { id: "ko-KR-SunHiNeural",     label: "SunHi",  language: "ko-KR", langLabel: "한국어", tone: "bright" },
-  { id: "ko-KR-InJoonNeural",    label: "InJoon", language: "ko-KR", langLabel: "한국어", tone: "calm" },
-  { id: "fr-FR-DeniseNeural",    label: "Denise", language: "fr-FR", langLabel: "Français", tone: "expressive" },
-  { id: "es-ES-ElviraNeural",    label: "Elvira", language: "es-ES", langLabel: "Español", tone: "vivid" },
+  { id: "zh-TW-YunJheNeural", label: "繁中男聲 1", language: "zh-TW", langLabel: "繁體中文", tone: "成人男性" },
+  { id: "zh-TW-YunJheNeural__adult-male-2", label: "繁中男聲 2", language: "zh-TW", langLabel: "繁體中文", tone: "成人男性低沉" },
+  { id: "zh-TW-HsiaoChenNeural", label: "繁中女聲 1", language: "zh-TW", langLabel: "繁體中文", tone: "成人女性" },
+  { id: "zh-TW-HsiaoYuNeural", label: "繁中女聲 2", language: "zh-TW", langLabel: "繁體中文", tone: "成人女性柔和" },
+  { id: "zh-TW-YunJheNeural__boy-1", label: "繁中小男孩 1", language: "zh-TW", langLabel: "繁體中文", tone: "童聲男孩" },
+  { id: "zh-TW-YunJheNeural__boy-2", label: "繁中小男孩 2", language: "zh-TW", langLabel: "繁體中文", tone: "童聲男孩明亮" },
+  { id: "zh-TW-HsiaoChenNeural__girl-1", label: "繁中小女孩 1", language: "zh-TW", langLabel: "繁體中文", tone: "童聲女孩" },
+  { id: "zh-TW-HsiaoYuNeural__girl-2", label: "繁中小女孩 2", language: "zh-TW", langLabel: "繁體中文", tone: "童聲女孩柔和" },
+  { id: "en-US-AndrewNeural", label: "English Male 1", language: "en-US", langLabel: "English", tone: "adult male" },
+  { id: "en-US-BrianNeural", label: "English Male 2", language: "en-US", langLabel: "English", tone: "adult male casual" },
+  { id: "en-US-AvaNeural", label: "English Female 1", language: "en-US", langLabel: "English", tone: "adult female" },
+  { id: "en-US-EmmaNeural", label: "English Female 2", language: "en-US", langLabel: "English", tone: "adult female conversational" },
+  { id: "en-US-RogerNeural__boy-1", label: "English Boy 1", language: "en-US", langLabel: "English", tone: "boy voice" },
+  { id: "en-US-AndrewNeural__boy-2", label: "English Boy 2", language: "en-US", langLabel: "English", tone: "bright boy voice" },
+  { id: "en-US-AnaNeural", label: "English Girl 1", language: "en-US", langLabel: "English", tone: "girl voice" },
+  { id: "en-GB-MaisieNeural__girl-2", label: "English Girl 2", language: "en-GB", langLabel: "English", tone: "bright girl voice" },
+  { id: "ja-JP-KeitaNeural", label: "日本語男性 1", language: "ja-JP", langLabel: "日本語", tone: "成人男性" },
+  { id: "ja-JP-KeitaNeural__adult-male-2", label: "日本語男性 2", language: "ja-JP", langLabel: "日本語", tone: "成人男性低め" },
+  { id: "ja-JP-NanamiNeural", label: "日本語女性 1", language: "ja-JP", langLabel: "日本語", tone: "成人女性" },
+  { id: "ja-JP-NanamiNeural__adult-female-2", label: "日本語女性 2", language: "ja-JP", langLabel: "日本語", tone: "成人女性明るめ" },
+  { id: "ja-JP-KeitaNeural__boy-1", label: "日本語男の子 1", language: "ja-JP", langLabel: "日本語", tone: "男の子" },
+  { id: "ja-JP-KeitaNeural__boy-2", label: "日本語男の子 2", language: "ja-JP", langLabel: "日本語", tone: "明るい男の子" },
+  { id: "ja-JP-NanamiNeural__girl-1", label: "日本語女の子 1", language: "ja-JP", langLabel: "日本語", tone: "女の子" },
+  { id: "ja-JP-NanamiNeural__girl-2", label: "日本語女の子 2", language: "ja-JP", langLabel: "日本語", tone: "明るい女の子" },
 ];
 
 const defaultScript = `[主持人A]: 大家好，歡迎收聽 Wavescript。
@@ -83,7 +95,7 @@ const defaultSlots: VoiceSlot[] = [
   { id: 1, role: "主持人A", voice: "zh-TW-HsiaoChenNeural", sampleState: "idle" },
   { id: 2, role: "主持人B", voice: "zh-TW-YunJheNeural", sampleState: "idle" },
   { id: 3, role: "主持人C", voice: "zh-TW-HsiaoYuNeural", sampleState: "idle" },
-  { id: 4, role: "主持人D", voice: "zh-CN-YunxiNeural", sampleState: "idle" },
+  { id: 4, role: "主持人D", voice: "zh-TW-YunJheNeural__adult-male-2", sampleState: "idle" },
 ];
 
 export function useStudio() {

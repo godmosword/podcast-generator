@@ -21,7 +21,7 @@ DEFAULT_VOICE_MAP: dict[str, str] = {
     "主持人A": "zh-TW-HsiaoChenNeural",
     "主持人B": "zh-TW-YunJheNeural",
     "主持人C": "zh-TW-HsiaoYuNeural",
-    "主持人D": "zh-CN-YunxiNeural",
+    "主持人D": "zh-TW-YunJheNeural__adult-male-2",
     "來賓": "zh-TW-YunJheNeural",
     "narrator": "zh-TW-HsiaoChenNeural",
     "speaker_1": "zh-TW-HsiaoChenNeural",
@@ -77,9 +77,18 @@ class Config:
         return {"speed": self.speech_speed, "pitch": voice_pitch(voice)}
 
 
+def base_voice_id(voice: str) -> str:
+    return voice.split("__", 1)[0]
+
+
 def voice_pitch(voice: str) -> str:
-    child_like_voices = {
-        "zh-CN-XiaoyiNeural": "+2Hz",
-        "zh-CN-YunxiaNeural": "+3Hz",
+    profile = voice.split("__", 1)[1] if "__" in voice else ""
+    profile_pitch = {
+        "adult-male-2": "-2Hz",
+        "adult-female-2": "+1Hz",
+        "boy-1": "+7Hz",
+        "boy-2": "+9Hz",
+        "girl-1": "+8Hz",
+        "girl-2": "+10Hz",
     }
-    return child_like_voices.get(voice, "+0Hz")
+    return profile_pitch.get(profile, "+0Hz")
