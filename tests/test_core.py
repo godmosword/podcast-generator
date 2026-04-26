@@ -9,6 +9,7 @@ from pydub import AudioSegment
 from pydub.generators import Sine
 
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track, list_bgm_tracks
+from backend.jobs import Job, jobs
 from backend.main import app
 from config import Config
 from core.audio_processor import mix_bgm
@@ -95,6 +96,20 @@ class ApiValidationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("Unknown BGM track", response.json()["detail"])
+
+    def test_done_event_snapshot_includes_file_url(self) -> None:
+        client = TestClient(app)
+        job_id = "test-done-job"
+        jobs[job_id] = Job(id=job_id, status="done", progress=100, message="Done.", output_path=Path("output/test.mp3"))
+
+        try:
+            with client.stream("GET", f"/api/generate/{job_id}/events") as response:
+                first_line = next(response.iter_lines())
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(f'"file_url":"/api/files/{job_id}"', first_line.replace(" ", ""))
+        finally:
+            jobs.pop(job_id, None)
 
 
 if __name__ == "__main__":
