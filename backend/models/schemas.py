@@ -23,6 +23,8 @@ class AudioSettings(BaseModel):
     bgm_fade_ms: int = Field(default=1500, ge=0, le=8000)
     output_format: OutputFormat = "mp3"
     normalize: bool = True
+    voice_mode: Literal["conversational", "narration"] = "conversational"
+    voice_quality: Literal["standard", "high"] = "standard"
 
 
 class GenerateRequest(BaseModel):

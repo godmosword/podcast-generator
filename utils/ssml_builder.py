@@ -15,6 +15,8 @@ _PAUSE_MAP = {
     ";": 200,
 }
 
+PAUSE_MAP = _PAUSE_MAP  # public alias
+
 
 def build_ssml(text: str, rate: str = "medium", pitch: str = "medium") -> str:
     """Build SSML markup with natural break points at punctuation."""

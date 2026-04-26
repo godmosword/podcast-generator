@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import VOICE_CATALOG
-from backend.routers import bgm, classics, files, generate, preview
+from backend.routers import bgm, classics, files, generate, preview, script
 
 app = FastAPI(title="Wavescript API", version="0.1.0")
 
@@ -21,6 +21,7 @@ app.include_router(preview.router)
 app.include_router(files.router)
 app.include_router(bgm.router)
 app.include_router(classics.router)
+app.include_router(script.router)
 
 
 @app.get("/api/health")

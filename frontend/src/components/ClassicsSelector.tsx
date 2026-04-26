@@ -1,5 +1,6 @@
-import { BookOpen, FileText, Upload } from "lucide-react";
+import { BookOpen, FileText, Sparkles, Upload } from "lucide-react";
 import type { ClassicEntry, StoryFilter } from "../api";
+import type { Template } from "../data/templates";
 
 const STORY_TABS: Array<{ key: StoryFilter; label: string }> = [
   { key: "all", label: "全部" },
@@ -31,6 +32,9 @@ type ClassicsSelectorProps = {
   onSelectClassic: (id: string) => void;
   storyFilter: StoryFilter;
   onStoryFilter: (filter: StoryFilter) => void;
+  onOpenAiModal: () => void;
+  onApplyTemplate: (template: Template) => void;
+  templates: Template[];
 };
 
 export function ClassicsSelector({
@@ -48,6 +52,9 @@ export function ClassicsSelector({
   onSelectClassic,
   storyFilter,
   onStoryFilter,
+  onOpenAiModal,
+  onApplyTemplate,
+  templates,
 }: ClassicsSelectorProps) {
   return (
     <section className="panel editor-panel">
@@ -56,24 +63,40 @@ export function ClassicsSelector({
           <p className="eyebrow">Step 1</p>
           <h2>文稿</h2>
         </div>
-        <div className="mode-toggle" role="group" aria-label="Script mode">
-          <button
-            className={mode === "manual" ? "selected" : ""}
-            onClick={() => onModeChange("manual")}
-            type="button"
-          >
-            手動輸入
+        <div className="panel-heading-actions">
+          <button className="icon-text-button ai-gen-btn" onClick={onOpenAiModal} type="button">
+            <Sparkles size={15} />
+            <span>AI 生成</span>
           </button>
-          <button
-            className={mode === "classic" ? "selected" : ""}
-            onClick={() => onModeChange("classic")}
-            type="button"
-          >
-            <BookOpen size={14} />
-            選擇故事
-          </button>
+          <div className="mode-toggle" role="group" aria-label="Script mode">
+            <button
+              className={mode === "manual" ? "selected" : ""}
+              onClick={() => onModeChange("manual")}
+              type="button"
+            >
+              手動輸入
+            </button>
+            <button
+              className={mode === "classic" ? "selected" : ""}
+              onClick={() => onModeChange("classic")}
+              type="button"
+            >
+              <BookOpen size={14} />
+              選擇故事
+            </button>
+          </div>
         </div>
       </div>
+
+      {mode === "manual" && (
+        <div className="templates-row">
+          {templates.map((tpl) => (
+            <button key={tpl.id} className="template-chip" onClick={() => onApplyTemplate(tpl)} type="button">
+              {tpl.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {mode === "classic" && (
         <div className="duration-tabs" role="tablist">

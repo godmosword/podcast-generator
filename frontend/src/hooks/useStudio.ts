@@ -13,6 +13,8 @@ import {
   type StoryFilter,
   type JobEvent,
 } from "../api";
+import { type Template } from "../data/templates";
+import { useAutoSave, loadDraft } from "./useProject";
 
 export type VoiceId =
   // 繁體中文
@@ -123,8 +125,26 @@ export function useStudio() {
   const [classicsError, setClassicsError] = useState<string | null>(null);
   const [selectedClassicId, setSelectedClassicId] = useState<string | null>(null);
   const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
+  const [showAiModal, setShowAiModal] = useState(false);
 
   const visibleSlots = voiceSlots.slice(0, hostCount);
+
+  // Restore draft from localStorage on first mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (!draft) return;
+    setScript(draft.script);
+    setHostCount(draft.hostCount);
+    setSpeed(draft.speed);
+    setPauseMs(draft.pauseMs);
+    setBgmEnabled(draft.bgmEnabled);
+    setBgmVolumeDb(draft.bgmVolumeDb);
+    setBgmFadeMs(draft.bgmFadeMs);
+    if (draft.format === "mp3" || draft.format === "wav") setFormat(draft.format);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save key state to localStorage (3s debounce)
+  useAutoSave({ script, hostCount, speed, pauseMs, bgmEnabled, bgmVolumeDb, bgmFadeMs, format });
 
   useEffect(() => {
     if (scriptMode !== "classic") return;
@@ -208,6 +228,12 @@ export function useStudio() {
       return;
     }
     new Audio(absoluteApiUrl(track.preview_url)).play().catch(() => undefined);
+  }
+
+  function applyTemplate(template: Template) {
+    setScript(template.script);
+    setHostCount(template.hostCount);
+    setScriptMode("manual");
   }
 
   async function selectClassic(classicId: string) {
@@ -332,5 +358,8 @@ export function useStudio() {
     storyFilter,
     setStoryFilter,
     filteredClassics,
+    showAiModal,
+    setShowAiModal,
+    applyTemplate,
   };
 }

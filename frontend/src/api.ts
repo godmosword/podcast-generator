@@ -140,3 +140,31 @@ export async function fetchClassicScript(classicId: string): Promise<string> {
   const data = (await response.json()) as { id: string; script: string };
   return data.script;
 }
+
+export type ScriptGenerationPayload = {
+  topic: string;
+  duration_min: number;
+  host_count: number;
+  tone: "educational" | "entertainment" | "storytelling" | "interview" | "debate";
+  language: "zh-TW" | "zh-CN" | "en" | "ja";
+  extra_context?: string;
+};
+
+export type ScriptGenerationResult = {
+  script: string;
+  estimated_duration_sec: number;
+  warnings: string[];
+};
+
+export async function generateScript(payload: ScriptGenerationPayload): Promise<ScriptGenerationResult> {
+  const response = await fetch(`${API_BASE}/api/script/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error((error as { detail?: string } | null)?.detail ?? "Script generation failed.");
+  }
+  return response.json() as Promise<ScriptGenerationResult>;
+}

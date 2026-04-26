@@ -11,6 +11,7 @@ from core.exporter import export_audio
 from core.role_mapper import map_roles_to_voices
 from core.script_parser import parse_script_details
 from core.tts_engine import TTSEngine
+from core.voice_style import style_for
 from providers.base import AbstractTTSProvider
 from providers.edge_tts import EdgeTTSProvider
 from utils.file_utils import ensure_dir, read_text
@@ -107,7 +108,9 @@ class PodcastPipeline:
             pct = 10 + int((synthesized_count / max(1, len(speech_segments))) * 65)
             await _emit(progress, "synthesizing", pct, f"Synthesizing {segment.speaker}.")
 
-            audio_chunks = await self._engine.synthesize_chunks(chunks, voice, **config.tts_options_for(voice))
+            style = style_for(segment.speaker)
+            options = {**config.tts_options_for(voice), "pause_scale": style.pause_scale}
+            audio_chunks = await self._engine.synthesize_chunks(chunks, voice, **options)
             segment_audio = merge_segments(audio_chunks, pause_ms=config.segment_pause_ms)
 
             combined = combined + segment_audio

@@ -1,17 +1,47 @@
-import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, Moon, Sparkles, Sun, Wand2 } from "lucide-react";
 import { AudioSettings } from "../components/AudioSettings";
 import { ClassicsSelector } from "../components/ClassicsSelector";
 import { GenerateProgress } from "../components/GenerateProgress";
 import { HostCountPicker } from "../components/HostCountPicker";
+import { ScriptGeneratorModal } from "../components/ScriptGeneratorModal";
 import { StepNav } from "../components/StepNav";
 import { VoiceSlotRow } from "../components/VoiceSlotRow";
+import { TEMPLATES } from "../data/templates";
 import { useStudio } from "../hooks/useStudio";
+
+function useDarkMode() {
+  const [dark, setDark] = useState<boolean>(() => {
+    const stored = localStorage.getItem("wavescript-theme");
+    if (stored) return stored === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    localStorage.setItem("wavescript-theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  return [dark, setDark] as const;
+}
 
 export function Studio() {
   const studio = useStudio();
+  const [dark, setDark] = useDarkMode();
 
   return (
     <main className="studio-shell">
+      {studio.showAiModal && (
+        <ScriptGeneratorModal
+          hostCount={studio.hostCount}
+          onClose={() => studio.setShowAiModal(false)}
+          onScriptGenerated={(script) => {
+            studio.setScript(script);
+            studio.setScriptMode("manual");
+          }}
+        />
+      )}
+
       <header className="topbar">
         <div className="brand-mark">
           <Sparkles size={21} />
@@ -20,10 +50,21 @@ export function Studio() {
           <h1>Wavescript</h1>
           <p>Studio</p>
         </div>
-        <button className="primary-action" onClick={studio.generate} type="button">
-          <Wand2 size={18} />
-          <span>生成</span>
-        </button>
+        <div className="topbar-actions">
+          <button
+            className="icon-button theme-toggle"
+            onClick={() => setDark((d) => !d)}
+            type="button"
+            aria-label={dark ? "切換淺色模式" : "切換深色模式"}
+            title={dark ? "淺色模式" : "深色模式"}
+          >
+            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button className="primary-action" onClick={studio.generate} type="button">
+            <Wand2 size={18} />
+            <span>生成</span>
+          </button>
+        </div>
       </header>
 
       <StepNav current={studio.step} onSelect={studio.setStep} />
@@ -64,8 +105,11 @@ export function Studio() {
               onModeChange={studio.setScriptMode}
               onScriptChange={studio.setScript}
               onSelectClassic={studio.selectClassic}
+              onOpenAiModal={() => studio.setShowAiModal(true)}
+              onApplyTemplate={studio.applyTemplate}
               script={studio.script}
               selectedClassicId={studio.selectedClassicId}
+              templates={TEMPLATES}
             />
           )}
 

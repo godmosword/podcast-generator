@@ -1,3 +1,4 @@
+anthropic>=0.39.0
 edge-tts>=6.1.9
 pydub>=0.25.1
 mutagen>=1.47.0

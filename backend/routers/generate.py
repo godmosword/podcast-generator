@@ -76,6 +76,10 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
     config = Config(provider=provider)
     config.segment_pause_ms = request.audio.pause_ms
     config.speech_speed = request.audio.speed
+    config.voice_mode = request.audio.voice_mode
+    config.voice_quality = request.audio.voice_quality
+    if config.voice_quality == "high" and config.provider == Provider.OPENAI:
+        config.openai_model = "tts-1-hd"
     if request.audio.bgm_enabled and request.audio.bgm_id:
         config.bgm_path = str(get_bgm_track(request.audio.bgm_id).path)
     config.bgm_volume_db = request.audio.bgm_volume_db
