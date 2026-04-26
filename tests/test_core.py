@@ -58,8 +58,8 @@ class TTSConfigTests(unittest.TestCase):
         self.assertEqual({key: len(value) for key, value in groups.items()}, {"zh-TW": 8, "English": 8, "ja-JP": 8})
 
     def test_child_voice_pitch_profiles(self) -> None:
-        self.assertEqual(voice_pitch("zh-TW-YunJheNeural__boy-1"), "+7Hz")
-        self.assertEqual(voice_pitch("zh-TW-HsiaoYuNeural__girl-2"), "+10Hz")
+        self.assertEqual(voice_pitch("zh-TW-YunJheNeural__boy-1"), "+22Hz")
+        self.assertEqual(voice_pitch("zh-TW-HsiaoYuNeural__girl-2"), "+32Hz")
         self.assertEqual(voice_pitch("ja-JP-KeitaNeural__adult-male-2"), "-2Hz")
         self.assertEqual(voice_pitch("zh-TW-HsiaoChenNeural"), "+0Hz")
 

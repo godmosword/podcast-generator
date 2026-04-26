@@ -86,9 +86,9 @@ def voice_pitch(voice: str) -> str:
     profile_pitch = {
         "adult-male-2": "-2Hz",
         "adult-female-2": "+1Hz",
-        "boy-1": "+7Hz",
-        "boy-2": "+9Hz",
-        "girl-1": "+8Hz",
-        "girl-2": "+10Hz",
+        "boy-1": "+22Hz",
+        "boy-2": "+26Hz",
+        "girl-1": "+28Hz",
+        "girl-2": "+32Hz",
     }
     return profile_pitch.get(profile, "+0Hz")
