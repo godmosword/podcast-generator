@@ -57,10 +57,10 @@ export function Studio() {
               classicsLoading={studio.classicsLoading}
               classics={studio.filteredClassics}
               detectedHosts={studio.stats.detectedHosts}
-              durationFilter={studio.durationFilter}
+              storyFilter={studio.storyFilter}
               minutes={studio.stats.minutes}
               mode={studio.scriptMode}
-              onDurationFilter={studio.setDurationFilter}
+              onStoryFilter={studio.setStoryFilter}
               onModeChange={studio.setScriptMode}
               onScriptChange={studio.setScript}
               onSelectClassic={studio.selectClassic}

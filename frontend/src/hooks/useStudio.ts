@@ -9,15 +9,32 @@ import {
   startGenerate,
   type BgmTrack,
   type ClassicEntry,
-  type DurationCategory,
+  type StoryFilter,
   type JobEvent,
 } from "../api";
 
 export type VoiceId =
+  // 繁體中文
   | "zh-TW-HsiaoChenNeural"
   | "zh-TW-YunJheNeural"
   | "zh-TW-HsiaoYuNeural"
-  | "zh-CN-YunxiNeural";
+  // 簡體中文
+  | "zh-CN-YunxiNeural"
+  | "zh-CN-XiaoxiaoNeural"
+  // 英語
+  | "en-US-JennyNeural"
+  | "en-US-GuyNeural"
+  | "en-GB-SoniaNeural"
+  // 日語
+  | "ja-JP-NanamiNeural"
+  | "ja-JP-KeitaNeural"
+  // 韓語
+  | "ko-KR-SunHiNeural"
+  | "ko-KR-InJoonNeural"
+  // 法語
+  | "fr-FR-DeniseNeural"
+  // 西班牙語
+  | "es-ES-ElviraNeural";
 
 export type VoiceSlot = {
   id: number;
@@ -32,13 +49,24 @@ export type OutputFormat = "mp3" | "wav";
 export const voices: Array<{
   id: VoiceId;
   label: string;
-  provider: "Edge" | "OpenAI";
+  language: string;
+  langLabel: string;
   tone: string;
 }> = [
-  { id: "zh-TW-HsiaoChenNeural", label: "雅琪", provider: "Edge", tone: "清亮穩定" },
-  { id: "zh-TW-YunJheNeural", label: "建宏", provider: "Edge", tone: "溫和低頻" },
-  { id: "zh-TW-HsiaoYuNeural", label: "靜怡", provider: "Edge", tone: "親切柔和" },
-  { id: "zh-CN-YunxiNeural", label: "雲希", provider: "Edge", tone: "年輕清晰" },
+  { id: "zh-TW-HsiaoChenNeural", label: "雅琪", language: "zh-TW", langLabel: "繁體中文", tone: "清亮穩定" },
+  { id: "zh-TW-YunJheNeural",    label: "建宏", language: "zh-TW", langLabel: "繁體中文", tone: "溫和低頻" },
+  { id: "zh-TW-HsiaoYuNeural",   label: "靜怡", language: "zh-TW", langLabel: "繁體中文", tone: "親切柔和" },
+  { id: "zh-CN-YunxiNeural",     label: "雲希", language: "zh-CN", langLabel: "簡體中文", tone: "年輕清晰" },
+  { id: "zh-CN-XiaoxiaoNeural",  label: "曉曉", language: "zh-CN", langLabel: "簡體中文", tone: "溫暖親切" },
+  { id: "en-US-JennyNeural",     label: "Jenny", language: "en-US", langLabel: "English (US)", tone: "friendly" },
+  { id: "en-US-GuyNeural",       label: "Guy",   language: "en-US", langLabel: "English (US)", tone: "casual" },
+  { id: "en-GB-SoniaNeural",     label: "Sonia", language: "en-GB", langLabel: "English (UK)", tone: "formal" },
+  { id: "ja-JP-NanamiNeural",    label: "Nanami", language: "ja-JP", langLabel: "日本語", tone: "gentle" },
+  { id: "ja-JP-KeitaNeural",     label: "Keita",  language: "ja-JP", langLabel: "日本語", tone: "natural" },
+  { id: "ko-KR-SunHiNeural",     label: "SunHi",  language: "ko-KR", langLabel: "한국어", tone: "bright" },
+  { id: "ko-KR-InJoonNeural",    label: "InJoon", language: "ko-KR", langLabel: "한국어", tone: "calm" },
+  { id: "fr-FR-DeniseNeural",    label: "Denise", language: "fr-FR", langLabel: "Français", tone: "expressive" },
+  { id: "es-ES-ElviraNeural",    label: "Elvira", language: "es-ES", langLabel: "Español", tone: "vivid" },
 ];
 
 const defaultScript = `[主持人A]: 大家好，歡迎收聽 Wavescript。
@@ -77,7 +105,7 @@ export function useStudio() {
   const [classicsLoading, setClassicsLoading] = useState(false);
   const [classicsError, setClassicsError] = useState<string | null>(null);
   const [selectedClassicId, setSelectedClassicId] = useState<string | null>(null);
-  const [durationFilter, setDurationFilter] = useState<DurationCategory | "all">("all");
+  const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
 
   const visibleSlots = voiceSlots.slice(0, hostCount);
 
@@ -134,9 +162,21 @@ export function useStudio() {
     if (!slot) {
       return;
     }
+    const voiceInfo = voices.find((v) => v.id === slot.voice);
+    const previewText = voiceInfo?.language.startsWith("zh")
+      ? "這是一段 Wavescript 聲線試聽。"
+      : voiceInfo?.language.startsWith("ja")
+        ? "これは Wavescript の音声サンプルです。"
+        : voiceInfo?.language.startsWith("ko")
+          ? "이것은 Wavescript 음성 샘플입니다."
+          : voiceInfo?.language.startsWith("fr")
+            ? "Ceci est un exemple de voix Wavescript."
+            : voiceInfo?.language.startsWith("es")
+              ? "Esta es una muestra de voz de Wavescript."
+              : "This is a Wavescript voice preview.";
     updateSlot(id, { sampleState: "loading" });
     try {
-      const url = await previewVoice("這是一段 Wavescript 聲線試聽。", slot.voice);
+      const url = await previewVoice(previewText, slot.voice);
       updateSlot(id, { sampleState: "ready", previewUrl: url });
       new Audio(url).play().catch(() => undefined);
     } catch (previewError) {
@@ -165,7 +205,12 @@ export function useStudio() {
     }
   }
 
-  const filteredClassics = durationFilter === "all" ? classicsCatalog : classicsCatalog.filter((c) => c.duration_category === durationFilter);
+  const filteredClassics =
+    storyFilter === "all"
+      ? classicsCatalog
+      : storyFilter === "children"
+        ? classicsCatalog.filter((c) => c.category === "children")
+        : classicsCatalog.filter((c) => c.category !== "children" && c.duration_category === storyFilter);
 
   async function generate() {
     setStep(4);
@@ -255,8 +300,8 @@ export function useStudio() {
     classicsError,
     selectedClassicId,
     selectClassic,
-    durationFilter,
-    setDurationFilter,
+    storyFilter,
+    setStoryFilter,
     filteredClassics,
   };
 }

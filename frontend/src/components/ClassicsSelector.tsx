@@ -1,14 +1,16 @@
 import { BookOpen, FileText, Upload } from "lucide-react";
-import type { ClassicEntry, DurationCategory } from "../api";
+import type { ClassicEntry, StoryFilter } from "../api";
 
-const DURATION_TABS: Array<{ key: DurationCategory | "all"; label: string }> = [
+const STORY_TABS: Array<{ key: StoryFilter; label: string }> = [
   { key: "all", label: "全部" },
+  { key: "children", label: "🧒 兒童故事" },
   { key: "short", label: "短篇 5-10分" },
   { key: "medium", label: "中篇 10-20分" },
   { key: "long", label: "長篇 20-30分" },
 ];
 
 function categoryLabel(category: string): string {
+  if (category === "children") return "兒童故事";
   if (category === "zh-classic") return "中國經典";
   if (category === "western-fairy-tale") return "西方童話";
   return "西方經典";
@@ -27,8 +29,8 @@ type ClassicsSelectorProps = {
   classicsError: string | null;
   selectedClassicId: string | null;
   onSelectClassic: (id: string) => void;
-  durationFilter: DurationCategory | "all";
-  onDurationFilter: (filter: DurationCategory | "all") => void;
+  storyFilter: StoryFilter;
+  onStoryFilter: (filter: StoryFilter) => void;
 };
 
 export function ClassicsSelector({
@@ -44,8 +46,8 @@ export function ClassicsSelector({
   classicsError,
   selectedClassicId,
   onSelectClassic,
-  durationFilter,
-  onDurationFilter,
+  storyFilter,
+  onStoryFilter,
 }: ClassicsSelectorProps) {
   return (
     <section className="panel editor-panel">
@@ -68,20 +70,20 @@ export function ClassicsSelector({
             type="button"
           >
             <BookOpen size={14} />
-            選擇名著
+            選擇故事
           </button>
         </div>
       </div>
 
       {mode === "classic" && (
         <div className="duration-tabs" role="tablist">
-          {DURATION_TABS.map((tab) => (
+          {STORY_TABS.map((tab) => (
             <button
               key={tab.key}
               role="tab"
-              aria-selected={durationFilter === tab.key}
-              className={`duration-tab${durationFilter === tab.key ? " active" : ""}`}
-              onClick={() => onDurationFilter(tab.key)}
+              aria-selected={storyFilter === tab.key}
+              className={`duration-tab${storyFilter === tab.key ? " active" : ""}${tab.key === "children" ? " children-tab" : ""}`}
+              onClick={() => onStoryFilter(tab.key)}
               type="button"
             >
               {tab.label}
@@ -107,23 +109,19 @@ export function ClassicsSelector({
         <div className="classics-grid">
           {classicsLoading && <div className="classics-status">載入中…</div>}
           {classicsError && <div className="classics-status classics-error">{classicsError}</div>}
-          {!classicsLoading &&
-            !classicsError &&
-            classics.length === 0 && (
-              <div className="classics-status">此分類暫無故事</div>
-            )}
+          {!classicsLoading && !classicsError && classics.length === 0 && (
+            <div className="classics-status">此分類暫無故事</div>
+          )}
           {classics.map((classic) => (
             <button
               key={classic.id}
-              className={`classic-card${selectedClassicId === classic.id ? " selected" : ""}`}
+              className={`classic-card${selectedClassicId === classic.id ? " selected" : ""}${classic.category === "children" ? " children-card" : ""}`}
               onClick={() => onSelectClassic(classic.id)}
               type="button"
             >
               <div className="classic-card-header">
                 <span className="classic-category-badge">{categoryLabel(classic.category)}</span>
-                <span className="classic-duration-badge">
-                  {classic.duration_minutes}分鐘
-                </span>
+                <span className="classic-duration-badge">{classic.duration_minutes}分鐘</span>
               </div>
               <h3 className="classic-title">{classic.title}</h3>
               <p className="classic-author">{classic.author}</p>

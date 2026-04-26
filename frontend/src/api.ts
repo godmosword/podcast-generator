@@ -99,6 +99,7 @@ export function absoluteApiUrl(path: string): string {
 }
 
 export type DurationCategory = "short" | "medium" | "long";
+export type StoryFilter = "all" | "children" | DurationCategory;
 
 export type ClassicEntry = {
   id: string;

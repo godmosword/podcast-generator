@@ -1,5 +1,65 @@
 [
   {
+    "id": "tortoise-hare",
+    "title": "龜兔賽跑",
+    "author": "伊索",
+    "category": "children",
+    "duration_category": "short",
+    "duration_minutes": 5,
+    "language": "zh-TW",
+    "description": "驕傲的兔子和努力的烏龜比賽，告訴小朋友堅持不放棄的重要。",
+    "speaker_count": 2,
+    "tags": ["兒童", "伊索寓言", "努力"]
+  },
+  {
+    "id": "lion-mouse",
+    "title": "獅子和老鼠",
+    "author": "伊索",
+    "category": "children",
+    "duration_category": "short",
+    "duration_minutes": 6,
+    "language": "zh-TW",
+    "description": "森林之王獅子被小老鼠救出陷阱，不要小看任何人的溫馨故事。",
+    "speaker_count": 2,
+    "tags": ["兒童", "伊索寓言", "友善"]
+  },
+  {
+    "id": "little-red-riding-hood",
+    "title": "小紅帽",
+    "author": "格林兄弟",
+    "category": "children",
+    "duration_category": "short",
+    "duration_minutes": 7,
+    "language": "zh-TW",
+    "description": "小紅帽去外婆家途中遇到大野狼，學習注意安全、不跟陌生人說話的故事。",
+    "speaker_count": 2,
+    "tags": ["兒童", "格林", "安全教育"]
+  },
+  {
+    "id": "cinderella",
+    "title": "灰姑娘",
+    "author": "查爾斯·佩羅",
+    "category": "children",
+    "duration_category": "short",
+    "duration_minutes": 8,
+    "language": "zh-TW",
+    "description": "善良的灰姑娘在神仙教母幫助下，穿著水晶鞋去參加舞會的夢想故事。",
+    "speaker_count": 2,
+    "tags": ["兒童", "童話", "善良"]
+  },
+  {
+    "id": "jack-beanstalk",
+    "title": "傑克與魔豆",
+    "author": "英國民間故事",
+    "category": "children",
+    "duration_category": "short",
+    "duration_minutes": 8,
+    "language": "zh-TW",
+    "description": "傑克用魔豆爬上雲端城堡，勇敢面對巨人的精彩冒險故事。",
+    "speaker_count": 2,
+    "tags": ["兒童", "冒險", "勇氣"]
+  },
+  {
     "id": "snow-white",
     "title": "白雪公主",
     "author": "格林兄弟",

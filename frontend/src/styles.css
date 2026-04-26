@@ -772,6 +772,18 @@ input[type="range"] {
   border-color: transparent;
 }
 
+.duration-tab.children-tab {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: rgba(146, 64, 14, 0.2);
+}
+
+.duration-tab.children-tab.active {
+  color: #fff;
+  background: #d97706;
+  border-color: transparent;
+}
+
 /* ── Classics card grid ──────────────────────────────── */
 .classics-grid {
   display: grid;
@@ -836,6 +848,11 @@ input[type="range"] {
 .classic-category-badge {
   color: #be3455;
   background: #fdeef2;
+}
+
+.children-card .classic-category-badge {
+  color: #92400e;
+  background: #fef3c7;
 }
 
 .classic-duration-badge {
