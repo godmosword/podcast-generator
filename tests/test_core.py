@@ -11,7 +11,7 @@ from pydub.generators import Sine
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track, list_bgm_tracks
 from backend.jobs import Job, jobs
 from backend.main import app
-from config import Config
+from config import Config, voice_pitch
 from core.audio_processor import mix_bgm
 from core.role_mapper import RoleMappingError, map_roles_to_voices
 from core.script_parser import parse_script_details
@@ -43,6 +43,13 @@ class RoleMapperTests(unittest.TestCase):
     def test_rejects_too_many_speakers(self) -> None:
         with self.assertRaises(RoleMappingError):
             map_roles_to_voices(["A", "B", "C", "D", "E"], Config())
+
+
+class TTSConfigTests(unittest.TestCase):
+    def test_child_voice_pitch_profiles(self) -> None:
+        self.assertEqual(voice_pitch("zh-CN-XiaoyiNeural"), "+2Hz")
+        self.assertEqual(voice_pitch("zh-CN-YunxiaNeural"), "+3Hz")
+        self.assertEqual(voice_pitch("zh-TW-HsiaoChenNeural"), "+0Hz")
 
 
 class BgmCatalogTests(unittest.TestCase):

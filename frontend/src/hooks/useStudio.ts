@@ -22,6 +22,8 @@ export type VoiceId =
   // 簡體中文
   | "zh-CN-YunxiNeural"
   | "zh-CN-XiaoxiaoNeural"
+  | "zh-CN-XiaoyiNeural"
+  | "zh-CN-YunxiaNeural"
   // 英語
   | "en-US-JennyNeural"
   | "en-US-GuyNeural"
@@ -59,6 +61,8 @@ export const voices: Array<{
   { id: "zh-TW-HsiaoYuNeural",   label: "靜怡", language: "zh-TW", langLabel: "繁體中文", tone: "親切柔和" },
   { id: "zh-CN-YunxiNeural",     label: "雲希", language: "zh-CN", langLabel: "簡體中文", tone: "年輕清晰" },
   { id: "zh-CN-XiaoxiaoNeural",  label: "曉曉", language: "zh-CN", langLabel: "簡體中文", tone: "溫暖親切" },
+  { id: "zh-CN-XiaoyiNeural",    label: "小女孩", language: "zh-CN", langLabel: "簡體中文", tone: "活潑口語" },
+  { id: "zh-CN-YunxiaNeural",    label: "小男孩", language: "zh-CN", langLabel: "簡體中文", tone: "可愛童聲" },
   { id: "en-US-JennyNeural",     label: "Jenny", language: "en-US", langLabel: "English (US)", tone: "friendly" },
   { id: "en-US-GuyNeural",       label: "Guy",   language: "en-US", langLabel: "English (US)", tone: "casual" },
   { id: "en-GB-SoniaNeural",     label: "Sonia", language: "en-GB", langLabel: "English (UK)", tone: "formal" },
@@ -87,8 +91,8 @@ export function useStudio() {
   const [script, setScript] = useState(defaultScript);
   const [hostCount, setHostCount] = useState(2);
   const [voiceSlots, setVoiceSlots] = useState(defaultSlots);
-  const [speed, setSpeed] = useState(1);
-  const [pauseMs, setPauseMs] = useState(500);
+  const [speed, setSpeed] = useState(1.06);
+  const [pauseMs, setPauseMs] = useState(350);
   const [bgmEnabled, setBgmEnabled] = useState(true);
   const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>([]);
   const [selectedBgmId, setSelectedBgmId] = useState<string | null>(null);

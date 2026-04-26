@@ -41,6 +41,20 @@ VOICE_CATALOG = [
         "language": "zh-CN",
         "tone": "溫暖親切",
     },
+    {
+        "id": "zh-CN-XiaoyiNeural",
+        "label": "小女孩",
+        "provider": Provider.EDGE.value,
+        "language": "zh-CN",
+        "tone": "活潑口語",
+    },
+    {
+        "id": "zh-CN-YunxiaNeural",
+        "label": "小男孩",
+        "provider": Provider.EDGE.value,
+        "language": "zh-CN",
+        "tone": "可愛童聲",
+    },
     # 英語
     {
         "id": "en-US-JennyNeural",

@@ -14,7 +14,7 @@ class TTSEngine:
         async with self._semaphore:
             return await self._provider.synthesize(text, voice, **kwargs)
 
-    async def synthesize_chunks(self, chunks: list[str], voice: str) -> list[bytes]:
+    async def synthesize_chunks(self, chunks: list[str], voice: str, **kwargs) -> list[bytes]:
         """Synthesize all chunks concurrently (bounded by semaphore)."""
-        tasks = [self.synthesize(chunk, voice) for chunk in chunks]
+        tasks = [self.synthesize(chunk, voice, **kwargs) for chunk in chunks]
         return await asyncio.gather(*tasks)

@@ -52,6 +52,7 @@ class Config:
     chunk_size: int = 4096
     segment_pause_ms: int = 500
     target_lufs: float = -16.0
+    speech_speed: float = 1.06
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
     openai_model: str = "tts-1"
@@ -67,3 +68,18 @@ class Config:
     def voice_for(self, speaker: str) -> str:
         mapping = self.voice_map()
         return mapping.get(speaker, mapping["_default"])
+
+    def tts_options_for(self, voice: str) -> dict[str, float | str]:
+        if self.provider == Provider.OPENAI:
+            return {"speed": self.speech_speed}
+        if self.provider == Provider.ELEVENLABS:
+            return {}
+        return {"speed": self.speech_speed, "pitch": voice_pitch(voice)}
+
+
+def voice_pitch(voice: str) -> str:
+    child_like_voices = {
+        "zh-CN-XiaoyiNeural": "+2Hz",
+        "zh-CN-YunxiaNeural": "+3Hz",
+    }
+    return child_like_voices.get(voice, "+0Hz")

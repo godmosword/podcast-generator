@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api", tags=["preview"])
 async def preview(request: PreviewRequest) -> StreamingResponse:
     config = Config(provider=voice_provider(request.voice))
     provider = _build_provider(config)
-    raw = await provider.synthesize(request.text, request.voice)
+    raw = await provider.synthesize(request.text, request.voice, **config.tts_options_for(request.voice))
     audio = AudioSegment.from_file(io.BytesIO(raw), format="mp3")[: request.seconds * 1000]
     buffer = io.BytesIO()
     audio.export(buffer, format="mp3", bitrate="128k")

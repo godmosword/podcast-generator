@@ -107,7 +107,7 @@ class PodcastPipeline:
             pct = 10 + int((synthesized_count / max(1, len(speech_segments))) * 65)
             await _emit(progress, "synthesizing", pct, f"Synthesizing {segment.speaker}.")
 
-            audio_chunks = await self._engine.synthesize_chunks(chunks, voice)
+            audio_chunks = await self._engine.synthesize_chunks(chunks, voice, **config.tts_options_for(voice))
             segment_audio = merge_segments(audio_chunks, pause_ms=config.segment_pause_ms)
 
             combined = combined + segment_audio
