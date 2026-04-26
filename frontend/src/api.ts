@@ -1,0 +1,99 @@
+import type { OutputFormat, VoiceSlot } from "./hooks/useStudio";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+
+export type GeneratePayload = {
+  script: string;
+  hostCount: number;
+  voiceSlots: VoiceSlot[];
+  speed: number;
+  pauseMs: number;
+  bgmEnabled: boolean;
+  bgmId: string | null;
+  bgmVolumeDb: number;
+  bgmFadeMs: number;
+  format: OutputFormat;
+};
+
+export type BgmTrack = {
+  id: string;
+  title: string;
+  mood: string;
+  duration: number;
+  preview_url: string;
+};
+
+export type GenerateResponse = {
+  job_id: string;
+  events_url: string;
+  file_url: string | null;
+};
+
+export type JobEvent = {
+  id: string;
+  status: "queued" | "parsing" | "synthesizing" | "mixing" | "exporting" | "done" | "failed";
+  progress: number;
+  message: string;
+  file_url?: string;
+  error?: string;
+};
+
+export async function startGenerate(payload: GeneratePayload): Promise<GenerateResponse> {
+  const response = await fetch(`${API_BASE}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      script: payload.script,
+      host_count: payload.hostCount,
+      voice_assignments: payload.voiceSlots.map((slot) => ({ role: slot.role, voice: slot.voice })),
+      audio: {
+        speed: payload.speed,
+        pause_ms: payload.pauseMs,
+        bgm_enabled: payload.bgmEnabled,
+        bgm_id: payload.bgmId,
+        bgm_volume_db: payload.bgmVolumeDb,
+        bgm_fade_ms: payload.bgmFadeMs,
+        output_format: payload.format,
+        normalize: true,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.detail ?? "Generate request failed.");
+  }
+
+  return response.json();
+}
+
+export async function fetchBgmCatalog(): Promise<BgmTrack[]> {
+  const response = await fetch(`${API_BASE}/api/bgm`);
+  if (!response.ok) {
+    throw new Error("BGM catalog request failed.");
+  }
+  return response.json();
+}
+
+export function openJobEvents(eventsUrl: string): EventSource {
+  return new EventSource(`${API_BASE}${eventsUrl}`);
+}
+
+export async function previewVoice(text: string, voice: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/api/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, voice, seconds: 15 }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Preview request failed.");
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
+export function absoluteApiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
