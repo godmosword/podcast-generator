@@ -55,7 +55,10 @@ async def stream_events(job_id: str) -> StreamingResponse:
     job = _job_or_404(job_id)
 
     async def event_stream():
-        yield _format_sse({"id": job.id, "status": job.status, "progress": job.progress, "message": job.message})
+        snapshot = _snapshot(job).model_dump()
+        yield _format_sse(snapshot)
+        if snapshot["status"] in {"done", "failed"}:
+            return
         while True:
             event = await job.events.get()
             yield _format_sse(event)

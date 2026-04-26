@@ -4,6 +4,7 @@ import {
   fetchBgmCatalog,
   fetchClassicScript,
   fetchClassicsCatalog,
+  fetchJob,
   openJobEvents,
   previewVoice,
   startGenerate,
@@ -233,15 +234,27 @@ export function useStudio() {
         bgmFadeMs,
         format,
       });
+      const finishJob = async (fileUrl?: string | null) => {
+        let resolvedUrl = fileUrl ?? response.file_url;
+        if (!resolvedUrl) {
+          const snapshot = await fetchJob(response.job_id);
+          resolvedUrl = snapshot.file_url ?? null;
+        }
+        setIsGenerating(false);
+        setDownloadUrl(resolvedUrl ? absoluteApiUrl(resolvedUrl) : null);
+        if (!resolvedUrl) {
+          setError("Export finished, but download link was not returned.");
+        }
+      };
+
       const events = openJobEvents(response.events_url);
       events.onmessage = (event) => {
         const data = JSON.parse(event.data) as JobEvent;
         setProgress(data.progress);
         setStatusMessage(data.message);
         if (data.status === "done") {
-          setIsGenerating(false);
-          setDownloadUrl(data.file_url ? absoluteApiUrl(data.file_url) : null);
           events.close();
+          void finishJob(data.file_url);
         }
         if (data.status === "failed") {
           setIsGenerating(false);

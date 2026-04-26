@@ -1,4 +1,5 @@
-import { Download, Radio } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, Pause, Play, Radio } from "lucide-react";
 
 type GenerateProgressProps = {
   progress: number;
@@ -10,6 +11,32 @@ type GenerateProgressProps = {
 };
 
 export function GenerateProgress({ progress, isGenerating, format, message, downloadUrl, error }: GenerateProgressProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setIsPlaying(false);
+  }, [downloadUrl]);
+
+  function togglePlayback() {
+    if (!downloadUrl) {
+      return;
+    }
+    if (!audioRef.current) {
+      audioRef.current = new Audio(downloadUrl);
+      audioRef.current.addEventListener("ended", () => setIsPlaying(false));
+      audioRef.current.addEventListener("pause", () => setIsPlaying(false));
+      audioRef.current.addEventListener("play", () => setIsPlaying(true));
+    }
+    if (audioRef.current.paused) {
+      audioRef.current.play().catch(() => setIsPlaying(false));
+    } else {
+      audioRef.current.pause();
+    }
+  }
+
   return (
     <section className="panel output-panel">
       <div className="panel-heading">
@@ -31,8 +58,8 @@ export function GenerateProgress({ progress, isGenerating, format, message, down
       </div>
 
       <div className="player-strip">
-        <button className="icon-button" type="button" title="播放">
-          <Radio size={18} />
+        <button className="icon-button" type="button" title={isPlaying ? "暫停" : "播放"} onClick={togglePlayback} disabled={!downloadUrl}>
+          {isPlaying ? <Pause size={18} /> : <Play size={18} />}
         </button>
         <div className="waveform" aria-hidden="true">
           {Array.from({ length: 34 }).map((_, index) => (

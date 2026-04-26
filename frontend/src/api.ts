@@ -38,6 +38,8 @@ export type JobEvent = {
   error?: string;
 };
 
+export type JobSnapshot = JobEvent;
+
 export async function startGenerate(payload: GeneratePayload): Promise<GenerateResponse> {
   const response = await fetch(`${API_BASE}/api/generate`, {
     method: "POST",
@@ -71,6 +73,14 @@ export async function fetchBgmCatalog(): Promise<BgmTrack[]> {
   const response = await fetch(`${API_BASE}/api/bgm`);
   if (!response.ok) {
     throw new Error("BGM catalog request failed.");
+  }
+  return response.json();
+}
+
+export async function fetchJob(jobId: string): Promise<JobSnapshot> {
+  const response = await fetch(`${API_BASE}/api/generate/${jobId}`);
+  if (!response.ok) {
+    throw new Error("Job status request failed.");
   }
   return response.json();
 }
