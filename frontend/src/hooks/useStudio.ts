@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { absoluteApiUrl, fetchBgmCatalog, openJobEvents, previewVoice, startGenerate, type BgmTrack, type JobEvent } from "../api";
+import {
+  absoluteApiUrl,
+  fetchBgmCatalog,
+  fetchClassicScript,
+  fetchClassicsCatalog,
+  openJobEvents,
+  previewVoice,
+  startGenerate,
+  type BgmTrack,
+  type ClassicEntry,
+  type DurationCategory,
+  type JobEvent,
+} from "../api";
 
 export type VoiceId =
   | "zh-TW-HsiaoChenNeural"
@@ -60,7 +72,27 @@ export function useStudio() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [scriptMode, setScriptMode] = useState<"manual" | "classic">("manual");
+  const [classicsCatalog, setClassicsCatalog] = useState<ClassicEntry[]>([]);
+  const [classicsLoading, setClassicsLoading] = useState(false);
+  const [classicsError, setClassicsError] = useState<string | null>(null);
+  const [selectedClassicId, setSelectedClassicId] = useState<string | null>(null);
+  const [durationFilter, setDurationFilter] = useState<DurationCategory | "all">("all");
+
   const visibleSlots = voiceSlots.slice(0, hostCount);
+
+  useEffect(() => {
+    if (scriptMode !== "classic") return;
+    if (classicsCatalog.length > 0) return;
+    setClassicsLoading(true);
+    setClassicsError(null);
+    fetchClassicsCatalog()
+      .then((entries) => setClassicsCatalog(entries))
+      .catch((err: unknown) =>
+        setClassicsError(err instanceof Error ? err.message : "Failed to load classics."),
+      )
+      .finally(() => setClassicsLoading(false));
+  }, [scriptMode, classicsCatalog.length]);
 
   useEffect(() => {
     fetchBgmCatalog()
@@ -120,6 +152,20 @@ export function useStudio() {
     }
     new Audio(absoluteApiUrl(track.preview_url)).play().catch(() => undefined);
   }
+
+  async function selectClassic(classicId: string) {
+    setSelectedClassicId(classicId);
+    setClassicsError(null);
+    try {
+      const scriptText = await fetchClassicScript(classicId);
+      setScript(scriptText);
+      setScriptMode("manual");
+    } catch (err: unknown) {
+      setClassicsError(err instanceof Error ? err.message : "Failed to load script.");
+    }
+  }
+
+  const filteredClassics = durationFilter === "all" ? classicsCatalog : classicsCatalog.filter((c) => c.duration_category === durationFilter);
 
   async function generate() {
     setStep(4);
@@ -202,5 +248,15 @@ export function useStudio() {
     error,
     generate,
     stats,
+    scriptMode,
+    setScriptMode,
+    classicsCatalog,
+    classicsLoading,
+    classicsError,
+    selectedClassicId,
+    selectClassic,
+    durationFilter,
+    setDurationFilter,
+    filteredClassics,
   };
 }
