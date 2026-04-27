@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { generateScript, type ScriptGenerationPayload } from "../api";
 
@@ -9,6 +9,7 @@ type Props = {
   hostCount: number;
   onClose: () => void;
   onScriptGenerated: (script: string) => void;
+  initialExtraContext?: string;
 };
 
 const TONES: Array<{ value: Tone; label: string }> = [
@@ -26,13 +27,17 @@ const LANGUAGES: Array<{ value: Language; label: string }> = [
   { value: "ja", label: "日本語" },
 ];
 
-export function ScriptGeneratorModal({ hostCount, onClose, onScriptGenerated }: Props) {
+export function ScriptGeneratorModal({ hostCount, onClose, onScriptGenerated, initialExtraContext }: Props) {
   const [topic, setTopic] = useState("");
   const [durationMin, setDurationMin] = useState(10);
   const [hosts, setHosts] = useState(hostCount);
   const [tone, setTone] = useState<Tone>("educational");
   const [language, setLanguage] = useState<Language>("zh-TW");
-  const [extraContext, setExtraContext] = useState("");
+  const [extraContext, setExtraContext] = useState(initialExtraContext ?? "");
+
+  useEffect(() => {
+    if (initialExtraContext) setExtraContext(initialExtraContext);
+  }, [initialExtraContext]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
