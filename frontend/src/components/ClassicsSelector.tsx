@@ -1,5 +1,6 @@
 import { BookOpen, FileText, Sparkles, Upload } from "lucide-react";
 import type { ClassicEntry, StoryFilter } from "../api";
+import { AnalysisPanel } from "./AnalysisPanel";
 import type { Template } from "../data/templates";
 
 const STORY_TABS: Array<{ key: StoryFilter; label: string }> = [
@@ -34,6 +35,7 @@ type ClassicsSelectorProps = {
   onStoryFilter: (filter: StoryFilter) => void;
   onOpenAiModal: () => void;
   onApplyTemplate: (template: Template) => void;
+  onAnalyzeApply: (context: string) => void;
   templates: Template[];
 };
 
@@ -54,6 +56,7 @@ export function ClassicsSelector({
   onStoryFilter,
   onOpenAiModal,
   onApplyTemplate,
+  onAnalyzeApply,
   templates,
 }: ClassicsSelectorProps) {
   return (
@@ -127,6 +130,7 @@ export function ClassicsSelector({
             <Upload size={17} />
             <span>TXT</span>
           </button>
+          <AnalysisPanel script={script} onApplyContext={onAnalyzeApply} />
         </>
       ) : (
         <div className="classics-grid">

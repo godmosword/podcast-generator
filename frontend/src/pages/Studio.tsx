@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Moon, Sparkles, Sun, Wand2 } from "lucide-react";
 import { AudioSettings } from "../components/AudioSettings";
 import { ClassicsSelector } from "../components/ClassicsSelector";
@@ -8,26 +7,17 @@ import { ScriptGeneratorModal } from "../components/ScriptGeneratorModal";
 import { StepNav } from "../components/StepNav";
 import { VoiceSlotRow } from "../components/VoiceSlotRow";
 import { TEMPLATES } from "../data/templates";
+import { useDarkMode } from "../hooks/useDarkMode";
 import { useStudio } from "../hooks/useStudio";
-
-function useDarkMode() {
-  const [dark, setDark] = useState<boolean>(() => {
-    const stored = localStorage.getItem("wavescript-theme");
-    if (stored) return stored === "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    localStorage.setItem("wavescript-theme", dark ? "dark" : "light");
-  }, [dark]);
-
-  return [dark, setDark] as const;
-}
 
 export function Studio() {
   const studio = useStudio();
   const [dark, setDark] = useDarkMode();
+
+  function handleAnalyzeApply(context: string) {
+    studio.setAnalysisContext(context);
+    studio.setShowAiModal(true);
+  }
 
   return (
     <main className="studio-shell">
@@ -39,6 +29,7 @@ export function Studio() {
             studio.setScript(script);
             studio.setScriptMode("manual");
           }}
+          initialExtraContext={studio.analysisContext}
         />
       )}
 
@@ -91,82 +82,85 @@ export function Studio() {
         </aside>
 
         <div className="main-flow">
-          {studio.step === 1 && (
-            <ClassicsSelector
-              chars={studio.stats.chars}
-              classicsError={studio.classicsError}
-              classicsLoading={studio.classicsLoading}
-              classics={studio.filteredClassics}
-              detectedHosts={studio.stats.detectedHosts}
-              storyFilter={studio.storyFilter}
-              minutes={studio.stats.minutes}
-              mode={studio.scriptMode}
-              onStoryFilter={studio.setStoryFilter}
-              onModeChange={studio.setScriptMode}
-              onScriptChange={studio.setScript}
-              onSelectClassic={studio.selectClassic}
-              onOpenAiModal={() => studio.setShowAiModal(true)}
-              onApplyTemplate={studio.applyTemplate}
-              script={studio.script}
-              selectedClassicId={studio.selectedClassicId}
-              templates={TEMPLATES}
-            />
-          )}
+          <div key={studio.step} className="step-content animate-fade-in-up">
+            {studio.step === 1 && (
+              <ClassicsSelector
+                chars={studio.stats.chars}
+                classicsError={studio.classicsError}
+                classicsLoading={studio.classicsLoading}
+                classics={studio.filteredClassics}
+                detectedHosts={studio.stats.detectedHosts}
+                storyFilter={studio.storyFilter}
+                minutes={studio.stats.minutes}
+                mode={studio.scriptMode}
+                onStoryFilter={studio.setStoryFilter}
+                onModeChange={studio.setScriptMode}
+                onScriptChange={studio.setScript}
+                onSelectClassic={studio.selectClassic}
+                onOpenAiModal={() => studio.setShowAiModal(true)}
+                onApplyTemplate={studio.applyTemplate}
+                onAnalyzeApply={handleAnalyzeApply}
+                script={studio.script}
+                selectedClassicId={studio.selectedClassicId}
+                templates={TEMPLATES}
+              />
+            )}
 
-          {studio.step === 2 && (
-            <section className="panel hosts-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Step 2</p>
-                  <h2>主持人</h2>
+            {studio.step === 2 && (
+              <section className="panel hosts-panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="eyebrow">Step 2</p>
+                    <h2>主持人</h2>
+                  </div>
+                  <HostCountPicker onChange={studio.setHostCount} value={studio.hostCount} />
                 </div>
-                <HostCountPicker onChange={studio.setHostCount} value={studio.hostCount} />
-              </div>
 
-              <div className="voice-list">
-                {studio.visibleSlots.map((slot) => (
-                  <VoiceSlotRow
-                    key={slot.id}
-                    onChange={(changes) => studio.updateSlot(slot.id, changes)}
-                    onPreview={() => studio.previewSlot(slot.id)}
-                    slot={slot}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+                <div className="voice-list">
+                  {studio.visibleSlots.map((slot) => (
+                    <VoiceSlotRow
+                      key={slot.id}
+                      onChange={(changes) => studio.updateSlot(slot.id, changes)}
+                      onPreview={() => studio.previewSlot(slot.id)}
+                      slot={slot}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-          {studio.step === 3 && (
-            <AudioSettings
-              bgmEnabled={studio.bgmEnabled}
-              bgmFadeMs={studio.bgmFadeMs}
-              bgmTracks={studio.bgmTracks}
-              bgmVolumeDb={studio.bgmVolumeDb}
-              format={studio.format}
-              pauseMs={studio.pauseMs}
-              previewBgm={studio.previewBgm}
-              selectedBgmId={studio.selectedBgmId}
-              setBgmEnabled={studio.setBgmEnabled}
-              setBgmFadeMs={studio.setBgmFadeMs}
-              setBgmVolumeDb={studio.setBgmVolumeDb}
-              setFormat={studio.setFormat}
-              setPauseMs={studio.setPauseMs}
-              setSelectedBgmId={studio.setSelectedBgmId}
-              setSpeed={studio.setSpeed}
-              speed={studio.speed}
-            />
-          )}
+            {studio.step === 3 && (
+              <AudioSettings
+                bgmEnabled={studio.bgmEnabled}
+                bgmFadeMs={studio.bgmFadeMs}
+                bgmTracks={studio.bgmTracks}
+                bgmVolumeDb={studio.bgmVolumeDb}
+                format={studio.format}
+                pauseMs={studio.pauseMs}
+                previewBgm={studio.previewBgm}
+                selectedBgmId={studio.selectedBgmId}
+                setBgmEnabled={studio.setBgmEnabled}
+                setBgmFadeMs={studio.setBgmFadeMs}
+                setBgmVolumeDb={studio.setBgmVolumeDb}
+                setFormat={studio.setFormat}
+                setPauseMs={studio.setPauseMs}
+                setSelectedBgmId={studio.setSelectedBgmId}
+                setSpeed={studio.setSpeed}
+                speed={studio.speed}
+              />
+            )}
 
-          {studio.step === 4 && (
-            <GenerateProgress
-              downloadUrl={studio.downloadUrl}
-              error={studio.error}
-              format={studio.format}
-              isGenerating={studio.isGenerating}
-              message={studio.statusMessage}
-              progress={studio.progress}
-            />
-          )}
+            {studio.step === 4 && (
+              <GenerateProgress
+                downloadUrl={studio.downloadUrl}
+                error={studio.error}
+                format={studio.format}
+                isGenerating={studio.isGenerating}
+                message={studio.statusMessage}
+                progress={studio.progress}
+              />
+            )}
+          </div>
 
           <footer className="flow-controls">
             <button disabled={studio.step === 1} onClick={() => studio.setStep(Math.max(1, studio.step - 1))} type="button">

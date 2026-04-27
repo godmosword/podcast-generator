@@ -126,6 +126,7 @@ export function useStudio() {
   const [selectedClassicId, setSelectedClassicId] = useState<string | null>(null);
   const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
   const [showAiModal, setShowAiModal] = useState(false);
+  const [analysisContext, setAnalysisContext] = useState("");
 
   const visibleSlots = voiceSlots.slice(0, hostCount);
 
@@ -361,5 +362,7 @@ export function useStudio() {
     showAiModal,
     setShowAiModal,
     applyTemplate,
+    analysisContext,
+    setAnalysisContext,
   };
 }

@@ -168,3 +168,35 @@ export async function generateScript(payload: ScriptGenerationPayload): Promise<
   }
   return response.json() as Promise<ScriptGenerationResult>;
 }
+
+export type AnalysisFinding = {
+  type: "gap" | "boundary" | "suggestion" | "strength";
+  severity: "info" | "warning" | "critical";
+  content: string;
+};
+
+export type AnalysisResult = {
+  logical_score: number;
+  summary: string;
+  findings: AnalysisFinding[];
+  enriched_context: string;
+};
+
+export type AnalyzePayload = {
+  text: string;
+  topic?: string;
+  language?: "zh-TW" | "zh-CN" | "en" | "ja";
+};
+
+export async function analyzeText(payload: AnalyzePayload): Promise<AnalysisResult> {
+  const response = await fetch(`${API_BASE}/api/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error((error as { detail?: string } | null)?.detail ?? "Analysis failed.");
+  }
+  return response.json() as Promise<AnalysisResult>;
+}
