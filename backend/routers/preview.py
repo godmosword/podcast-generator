@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydub import AudioSegment
 
@@ -17,7 +17,10 @@ router = APIRouter(prefix="/api", tags=["preview"])
 @router.post("/preview")
 async def preview(request: PreviewRequest) -> StreamingResponse:
     config = Config(provider=voice_provider(request.voice))
-    provider = _build_provider(config)
+    try:
+        provider = _build_provider(config)
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     raw = await provider.synthesize(request.text, request.voice, **config.tts_options_for(request.voice))
     audio = AudioSegment.from_file(io.BytesIO(raw), format="mp3")[: request.seconds * 1000]
     buffer = io.BytesIO()

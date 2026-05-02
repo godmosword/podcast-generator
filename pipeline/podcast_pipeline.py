@@ -24,9 +24,13 @@ def _build_provider(config: Config) -> AbstractTTSProvider:
     if config.provider == Provider.EDGE:
         return EdgeTTSProvider()
     if config.provider == Provider.OPENAI:
+        if not config.openai_api_key:
+            raise ValueError("OPENAI_API_KEY is not configured.")
         from providers.openai_tts import OpenAITTSProvider
         return OpenAITTSProvider(api_key=config.openai_api_key, model=config.openai_model)
     if config.provider == Provider.ELEVENLABS:
+        if not config.elevenlabs_api_key:
+            raise ValueError("ELEVENLABS_API_KEY is not configured.")
         from providers.elevenlabs import ElevenLabsProvider
         return ElevenLabsProvider(api_key=config.elevenlabs_api_key)
     raise ValueError(f"Unknown provider: {config.provider}")

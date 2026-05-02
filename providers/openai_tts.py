@@ -15,15 +15,19 @@ class OpenAITTSProvider(AbstractTTSProvider):
         self._model = model
 
     async def synthesize(self, text: str, voice: str, **kwargs) -> bytes:
+        options = {}
+        if "speed" in kwargs:
+            options["speed"] = kwargs["speed"]
+
         response = await self._client.audio.speech.create(
             model=self._model,
             voice=voice,
             input=text,
             response_format="mp3",
-            **kwargs,
+            **options,
         )
         buffer = io.BytesIO()
-        async for chunk in response.iter_bytes():
+        for chunk in response.iter_bytes():
             buffer.write(chunk)
         buffer.seek(0)
         return buffer.read()

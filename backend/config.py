@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from config import OPENAI_VOICE_MAP, Provider, base_voice_id
+from config import ELEVENLABS_VOICE_MAP, OPENAI_VOICE_MAP, Provider, base_voice_id
 
 
 VOICE_CATALOG = [
@@ -31,11 +31,25 @@ VOICE_CATALOG = [
     {"id": "ja-JP-KeitaNeural__boy-2", "label": "陽翔", "provider": Provider.EDGE.value, "language": "ja-JP", "tone": "明るい5歳男の子"},
     {"id": "ja-JP-NanamiNeural__girl-1", "label": "結菜", "provider": Provider.EDGE.value, "language": "ja-JP", "tone": "5歳女の子"},
     {"id": "ja-JP-NanamiNeural__girl-2", "label": "陽菜", "provider": Provider.EDGE.value, "language": "ja-JP", "tone": "明るい5歳女の子"},
+    # OpenAI
+    {"id": "alloy", "label": "Alloy", "provider": Provider.OPENAI.value, "language": "multi", "tone": "balanced"},
+    {"id": "nova", "label": "Nova", "provider": Provider.OPENAI.value, "language": "multi", "tone": "warm"},
+    {"id": "echo", "label": "Echo", "provider": Provider.OPENAI.value, "language": "multi", "tone": "clear"},
+    {"id": "fable", "label": "Fable", "provider": Provider.OPENAI.value, "language": "multi", "tone": "storytelling"},
+    {"id": "onyx", "label": "Onyx", "provider": Provider.OPENAI.value, "language": "multi", "tone": "deep"},
+    {"id": "shimmer", "label": "Shimmer", "provider": Provider.OPENAI.value, "language": "multi", "tone": "bright"},
+    # ElevenLabs
+    {"id": "Rachel", "label": "Rachel", "provider": Provider.ELEVENLABS.value, "language": "multi", "tone": "adult female"},
+    {"id": "Adam", "label": "Adam", "provider": Provider.ELEVENLABS.value, "language": "multi", "tone": "adult male"},
 ]
 
 
 def voice_provider(voice_id: str) -> Provider:
     openai_voices = set(OPENAI_VOICE_MAP.values()) | {"nova", "alloy", "echo", "fable", "onyx", "shimmer"}
-    if base_voice_id(voice_id) in openai_voices:
+    elevenlabs_voices = set(ELEVENLABS_VOICE_MAP.values()) | {"Rachel", "Adam"}
+    base_voice = base_voice_id(voice_id)
+    if base_voice in openai_voices:
         return Provider.OPENAI
+    if base_voice in elevenlabs_voices:
+        return Provider.ELEVENLABS
     return Provider.EDGE
