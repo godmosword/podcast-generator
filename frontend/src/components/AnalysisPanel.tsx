@@ -95,7 +95,7 @@ export function AnalysisPanel({ script, onApplyContext }: Props) {
         <div className="analysis-panel">
           <div className="analysis-spinner-wrap">
             <span className="analysis-spinner" />
-            <span>Claude 正在分析邏輯結構與邊界條件…</span>
+            <span>Gemini 正在分析邏輯結構與邊界條件…</span>
           </div>
         </div>
       )}

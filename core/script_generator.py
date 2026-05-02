@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import re
+import asyncio
 from dataclasses import dataclass, field
-
-import anthropic
 
 from utils.script_metrics import measure_script, target_units_for_duration
 
@@ -102,46 +101,44 @@ def _validate_and_clean(raw: str, spec: ScriptSpec) -> tuple[str, list[str]]:
     return script, warnings
 
 
-async def generate_script(spec: ScriptSpec, api_key: str) -> ScriptDraft:
-    client = anthropic.AsyncAnthropic(api_key=api_key)
+async def _generate_text(api_key: str, model: str, system_prompt: str, user_content: str, max_output_tokens: int) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    response = await asyncio.to_thread(
+        client.models.generate_content,
+        model=model,
+        contents=user_content,
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            max_output_tokens=max_output_tokens,
+        ),
+    )
+    return response.text or ""
+
+
+async def generate_script(spec: ScriptSpec, api_key: str, model: str) -> ScriptDraft:
     system_prompt = _build_system_prompt(spec)
 
     user_content = f"Topic: {spec.topic}"
     if spec.extra_context:
         user_content += f"\n\nAdditional context: {spec.extra_context}"
 
-    message = await client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=8192,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_content}],
-    )
-
-    raw = message.content[0].text if message.content else ""
+    raw = await _generate_text(api_key, model, system_prompt, user_content, max_output_tokens=8192)
     script, warnings = _validate_and_clean(raw, spec)
 
     # Single retry when too short
     metrics = measure_script(script, spec.language)
     target, _, short_label, per_minute = target_units_for_duration(spec.duration_min, spec.language)
     if metrics.unit_count < int(spec.duration_min * per_minute * 0.70):
-        retry = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8192,
-            system=system_prompt,
-            messages=[
-                {"role": "user", "content": user_content},
-                {"role": "assistant", "content": raw},
-                {
-                    "role": "user",
-                    "content": (
-                        f"The script is too short ({metrics.unit_count} {short_label}). "
-                        f"Continue the dialogue to reach ~{target} {short_label} total. "
-                        "Same format, pick up naturally from the last line."
-                    ),
-                },
-            ],
+        retry_content = (
+            f"{user_content}\n\nCurrent draft:\n{raw}\n\n"
+            f"The script is too short ({metrics.unit_count} {short_label}). "
+            f"Continue the dialogue to reach ~{target} {short_label} total. "
+            "Same format, pick up naturally from the last line."
         )
-        extra_raw = retry.content[0].text if retry.content else ""
+        extra_raw = await _generate_text(api_key, model, system_prompt, retry_content, max_output_tokens=8192)
         script, warnings = _validate_and_clean(raw + "\n" + extra_raw, spec)
         metrics = measure_script(script, spec.language)
 

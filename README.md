@@ -15,7 +15,8 @@ Wavescript 是一個中文友善的 AI Podcast 生成器。你可以貼上有角
 - 支援 1-4 位主持人的文字轉 Podcast 生成
 - 支援 `[主持人A]: 內容` 角色標記
 - 自動偵測講者並映射到聲線
-- 預設使用免費 Edge TTS，也保留 OpenAI / ElevenLabs provider 模組
+- 預設使用 OpenAI TTS，並保留 Edge TTS / ElevenLabs provider 模組
+- AI 文稿生成與分析使用 Gemini
 - 單段聲線試聽
 - Server-Sent Events 即時生成進度
 - MP3/WAV 輸出
@@ -58,10 +59,11 @@ Docker backend image 會自動安裝 `ffmpeg`。如果你直接在本機跑 back
 ```env
 OPENAI_API_KEY=
 ELEVENLABS_API_KEY=
-ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3-flash-preview
 APP_ENV=development
 BGM_PATH=
-TTS_PROVIDER=edge
+TTS_PROVIDER=openai
 OUTPUT_DIR=output
 JOB_TTL_SECONDS=21600
 CORS_ORIGINS=http://localhost:3000
@@ -73,7 +75,7 @@ RATE_LIMIT_AI_PER_MINUTE=10
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-Edge TTS 是預設 provider，不需要 API key。
+OpenAI TTS 是預設 provider，需要 `OPENAI_API_KEY`。AI 文稿生成與分析需要 `GEMINI_API_KEY`。若改用 `TTS_PROVIDER=edge`，TTS 不需要 API key。
 
 正式環境請設定 `APP_ENV=production`，並把 `CORS_ORIGINS` 改成實際前端網域；production 模式不允許空值或 `*`。若 backend 位於 CDN 或反向代理後方，請設定 `TRUST_PROXY_HEADERS=true` 並填入可信代理的 `TRUSTED_PROXY_CIDRS`，否則限流會使用直接連線 IP。
 
@@ -222,7 +224,8 @@ Wavescript is a Chinese-friendly AI podcast generator. It converts marked-up scr
 - Generate podcasts for 1-4 hosts from text scripts
 - Use speaker tags like `[Host A]: dialogue`
 - Auto-detect speakers and map them to voices
-- Edge TTS by default, with optional OpenAI and ElevenLabs provider modules
+- OpenAI TTS by default, with optional Edge TTS and ElevenLabs provider modules
+- Gemini for AI script generation and analysis
 - Voice preview and real-time generation progress
 - MP3/WAV export with MP3 ID3 metadata
 - LUFS normalization, peak limiting, fades, and optional BGM mixing
@@ -340,7 +343,8 @@ Wavescript は、中国語に強い AI Podcast 生成ツールです。話者タ
 - 1-4 人のホストに対応
 - `[主持人A]: テキスト` のような話者タグをサポート
 - 話者の自動検出と voice mapping
-- デフォルトは Edge TTS、OpenAI / ElevenLabs provider も用意
+- デフォルトは OpenAI TTS、Edge TTS / ElevenLabs provider も用意
+- AI 台本生成と分析には Gemini を使用
 - 声のプレビュー
 - SSE による生成進捗
 - MP3/WAV 出力

@@ -67,7 +67,7 @@ def _env_int(name: str, default: int) -> int:
 @dataclass
 class Config:
     app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
-    provider: Provider = field(default_factory=lambda: Provider(os.getenv("TTS_PROVIDER", "edge")))
+    provider: Provider = field(default_factory=lambda: Provider(os.getenv("TTS_PROVIDER", "openai")))
     output_dir: Path = field(default_factory=lambda: Path(os.getenv("OUTPUT_DIR", "output")))
     bgm_path: str | None = os.getenv("BGM_PATH") or None
     bgm_volume_db: float = -20.0
@@ -77,7 +77,8 @@ class Config:
     speech_speed: float = 1.06
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
-    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
+    gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
+    gemini_model: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"))
     openai_model: str = "tts-1"
     concurrent_requests: int = 5
     voice_mode: str = "conversational"

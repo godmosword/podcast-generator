@@ -6,7 +6,7 @@ const FEATURES = [
   {
     icon: <Sparkles size={22} />,
     title: "AI 智能腳本",
-    body: "貼入任何文字或輸入主題，Claude 自動分析邏輯結構與邊界條件，生成流暢的多人對話稿。",
+    body: "貼入任何文字或輸入主題，Gemini 自動分析邏輯結構與邊界條件，生成流暢的多人對話稿。",
     delay: "320ms",
   },
   {
@@ -97,7 +97,7 @@ export function Landing() {
       </section>
 
       <footer className="landing-footer">
-        <span>© {new Date().getFullYear()} Wavescript — Powered by Claude AI</span>
+        <span>© {new Date().getFullYear()} Wavescript — Powered by Gemini AI</span>
       </footer>
     </main>
   );
