@@ -13,27 +13,63 @@ type GenerateProgressProps = {
 export function GenerateProgress({ progress, isGenerating, format, message, downloadUrl, error }: GenerateProgressProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     audioRef.current?.pause();
     audioRef.current = null;
     setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
   }, [downloadUrl]);
 
-  function togglePlayback() {
+  const playbackProgress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+
+  function formatTime(seconds: number) {
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      return "0:00";
+    }
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  }
+
+  function ensureAudio() {
     if (!downloadUrl) {
-      return;
+      return null;
     }
     if (!audioRef.current) {
-      audioRef.current = new Audio(downloadUrl);
-      audioRef.current.addEventListener("ended", () => setIsPlaying(false));
-      audioRef.current.addEventListener("pause", () => setIsPlaying(false));
-      audioRef.current.addEventListener("play", () => setIsPlaying(true));
+      const audio = new Audio(downloadUrl);
+      audio.addEventListener("ended", () => setIsPlaying(false));
+      audio.addEventListener("pause", () => setIsPlaying(false));
+      audio.addEventListener("play", () => setIsPlaying(true));
+      audio.addEventListener("loadedmetadata", () => setDuration(audio.duration || 0));
+      audio.addEventListener("timeupdate", () => {
+        setCurrentTime(audio.currentTime || 0);
+        setDuration(audio.duration || 0);
+      });
+      audioRef.current = audio;
     }
-    if (audioRef.current.paused) {
-      audioRef.current.play().catch(() => setIsPlaying(false));
+    return audioRef.current;
+  }
+
+  function togglePlayback() {
+    const audio = ensureAudio();
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play().catch(() => setIsPlaying(false));
     } else {
-      audioRef.current.pause();
+      audio.pause();
+    }
+  }
+
+  function seek(value: string) {
+    const audio = ensureAudio();
+    const nextTime = Number(value);
+    setCurrentTime(nextTime);
+    if (audio) {
+      audio.currentTime = nextTime;
     }
   }
 
@@ -61,10 +97,31 @@ export function GenerateProgress({ progress, isGenerating, format, message, down
         <button className="icon-button" type="button" title={isPlaying ? "暫停" : "播放"} onClick={togglePlayback} disabled={!downloadUrl}>
           {isPlaying ? <Pause size={18} /> : <Play size={18} />}
         </button>
-        <div className="waveform" aria-hidden="true">
-          {Array.from({ length: 34 }).map((_, index) => (
-            <span key={index} style={{ height: `${18 + ((index * 9) % 30)}px` }} />
-          ))}
+        <div className="audio-timeline">
+          <div className="waveform" aria-hidden="true">
+            {Array.from({ length: 34 }).map((_, index) => (
+              <span
+                key={index}
+                className={index / 34 <= playbackProgress / 100 ? "played" : ""}
+                style={{ height: `${18 + ((index * 9) % 30)}px` }}
+              />
+            ))}
+          </div>
+          <input
+            aria-label="播放進度"
+            className="timeline-range"
+            disabled={!downloadUrl}
+            max={duration || 0}
+            min={0}
+            onChange={(event) => seek(event.target.value)}
+            step={0.1}
+            type="range"
+            value={duration ? currentTime : 0}
+          />
+          <div className="time-row">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
         </div>
         <a className={`download-button ${!downloadUrl ? "disabled" : ""}`} href={downloadUrl ?? undefined} download>
           <Download size={18} />

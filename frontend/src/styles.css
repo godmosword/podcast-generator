@@ -659,12 +659,35 @@ input[type="range"] {
   overflow: hidden;
 }
 
+.audio-timeline {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
 .waveform span {
   display: block;
   width: 5px;
   min-width: 5px;
-  background: #9ee7d7;
+  background: rgba(158, 231, 215, 0.42);
   border-radius: 999px;
+}
+
+.waveform span.played {
+  background: #9ee7d7;
+}
+
+.timeline-range {
+  width: 100%;
+  accent-color: #9ee7d7;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .download-button.disabled {
