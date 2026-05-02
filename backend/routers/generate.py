@@ -83,8 +83,7 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
     job = jobs[job_id]
     output_format = request.audio.output_format
     output_path = Path("output") / f"{job_id}.{output_format}"
-    provider = next(iter({voice_provider(item.voice) for item in request.voice_assignments}), Provider.EDGE)
-    config = Config(provider=provider)
+    config = Config()
     config.segment_pause_ms = request.audio.pause_ms
     config.speech_speed = request.audio.speed
     config.voice_mode = request.audio.voice_mode
@@ -103,7 +102,11 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
     if request.album:
         metadata["album"] = request.album
 
-    overrides = {item.role: item.voice for item in request.voice_assignments}
+    overrides = {
+        item.role: item.voice
+        for item in request.voice_assignments
+        if voice_provider(item.voice) == config.provider
+    }
 
     async def publish(status: str, progress: int, message: str) -> None:
         await job.publish(status, progress, message)
