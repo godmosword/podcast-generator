@@ -1,6 +1,23 @@
 import type { OutputFormat, VoiceSlot } from "./hooks/useStudio";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = new URL(API_BASE, "http://localhost:8000");
+
+export function apiUrl(path: string): string {
+  return new URL(path, API_BASE_URL).toString();
+}
+
+export function absoluteApiUrl(path: string, expectedPrefix = "/api/"): string {
+  if (!path.startsWith("/") || path.startsWith("//")) {
+    throw new Error("Invalid API path.");
+  }
+
+  const url = new URL(path, API_BASE_URL);
+  if (url.origin !== API_BASE_URL.origin || !url.pathname.startsWith(expectedPrefix)) {
+    throw new Error("Invalid API path.");
+  }
+  return url.toString();
+}
 
 export type GeneratePayload = {
   script: string;
@@ -49,7 +66,7 @@ export type JobEvent = {
 export type JobSnapshot = JobEvent;
 
 export async function startGenerate(payload: GeneratePayload): Promise<GenerateResponse> {
-  const response = await fetch(`${API_BASE}/api/generate`, {
+  const response = await fetch(apiUrl("/api/generate"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -78,7 +95,7 @@ export async function startGenerate(payload: GeneratePayload): Promise<GenerateR
 }
 
 export async function fetchBgmCatalog(): Promise<BgmTrack[]> {
-  const response = await fetch(`${API_BASE}/api/bgm`);
+  const response = await fetch(apiUrl("/api/bgm"));
   if (!response.ok) {
     throw new Error("BGM catalog request failed.");
   }
@@ -86,7 +103,7 @@ export async function fetchBgmCatalog(): Promise<BgmTrack[]> {
 }
 
 export async function fetchVoices(): Promise<VoiceCatalogItem[]> {
-  const response = await fetch(`${API_BASE}/api/voices`);
+  const response = await fetch(apiUrl("/api/voices"));
   if (!response.ok) {
     throw new Error("Voice catalog request failed.");
   }
@@ -94,7 +111,7 @@ export async function fetchVoices(): Promise<VoiceCatalogItem[]> {
 }
 
 export async function fetchJob(jobId: string): Promise<JobSnapshot> {
-  const response = await fetch(`${API_BASE}/api/generate/${jobId}`);
+  const response = await fetch(apiUrl(`/api/generate/${encodeURIComponent(jobId)}`));
   if (!response.ok) {
     throw new Error("Job status request failed.");
   }
@@ -102,11 +119,11 @@ export async function fetchJob(jobId: string): Promise<JobSnapshot> {
 }
 
 export function openJobEvents(eventsUrl: string): EventSource {
-  return new EventSource(`${API_BASE}${eventsUrl}`);
+  return new EventSource(absoluteApiUrl(eventsUrl, "/api/generate/"));
 }
 
 export async function previewVoice(text: string, voice: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/api/preview`, {
+  const response = await fetch(apiUrl("/api/preview"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, voice, seconds: 15 }),
@@ -118,10 +135,6 @@ export async function previewVoice(text: string, voice: string): Promise<string>
 
   const blob = await response.blob();
   return URL.createObjectURL(blob);
-}
-
-export function absoluteApiUrl(path: string): string {
-  return `${API_BASE}${path}`;
 }
 
 export type DurationCategory = "short" | "medium" | "long";
@@ -141,7 +154,7 @@ export type ClassicEntry = {
 };
 
 export async function fetchClassicsCatalog(): Promise<ClassicEntry[]> {
-  const response = await fetch(`${API_BASE}/api/classics`);
+  const response = await fetch(apiUrl("/api/classics"));
   if (!response.ok) {
     throw new Error("Classics catalog request failed.");
   }
@@ -149,7 +162,7 @@ export async function fetchClassicsCatalog(): Promise<ClassicEntry[]> {
 }
 
 export async function fetchClassicScript(classicId: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/api/classics/${classicId}/script`);
+  const response = await fetch(apiUrl(`/api/classics/${encodeURIComponent(classicId)}/script`));
   if (!response.ok) {
     throw new Error("Classic script request failed.");
   }
@@ -173,7 +186,7 @@ export type ScriptGenerationResult = {
 };
 
 export async function generateScript(payload: ScriptGenerationPayload): Promise<ScriptGenerationResult> {
-  const response = await fetch(`${API_BASE}/api/script/generate`, {
+  const response = await fetch(apiUrl("/api/script/generate"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -205,7 +218,7 @@ export type AnalyzePayload = {
 };
 
 export async function analyzeText(payload: AnalyzePayload): Promise<AnalysisResult> {
-  const response = await fetch(`${API_BASE}/api/analyze`, {
+  const response = await fetch(apiUrl("/api/analyze"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

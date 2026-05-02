@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+import os
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from datetime import datetime, timedelta, timezone
@@ -13,6 +16,8 @@ from backend.bgm_catalog import BgmNotFoundError, get_bgm_track, list_bgm_tracks
 from backend.config import VOICE_CATALOG, voice_provider
 from backend.jobs import Job, jobs
 from backend.main import app
+from backend.security import get_client_ip, rate_limiter
+from backend.routers.generate import GENERIC_GENERATE_ERROR, _run_job
 from config import Config, Provider, voice_pitch
 from core.audio_processor import mix_bgm
 from core.role_mapper import RoleMappingError, map_roles_to_voices
@@ -72,6 +77,15 @@ class TTSConfigTests(unittest.TestCase):
         self.assertEqual(voice_provider("Rachel"), Provider.ELEVENLABS)
         self.assertEqual(voice_provider("zh-TW-HsiaoChenNeural"), Provider.EDGE)
 
+    def test_production_cors_rejects_wildcard_or_empty_origins(self) -> None:
+        with patch.dict(os.environ, {"APP_ENV": "production", "CORS_ORIGINS": "*"}):
+            with self.assertRaises(ValueError):
+                Config()
+
+        with patch.dict(os.environ, {"APP_ENV": "production", "CORS_ORIGINS": ""}):
+            with self.assertRaises(ValueError):
+                Config()
+
 
 class ScriptMetricsTests(unittest.TestCase):
     def test_english_metrics_ignore_chinese_speaker_tags(self) -> None:
@@ -128,6 +142,9 @@ class AudioProcessorTests(unittest.TestCase):
 
 
 class ApiValidationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        rate_limiter.reset()
+
     def test_generate_rejects_unknown_bgm_id(self) -> None:
         client = TestClient(app)
         response = client.post(
@@ -142,6 +159,141 @@ class ApiValidationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("Unknown BGM track", response.json()["detail"])
+
+    def test_generate_rejects_unknown_voice_id(self) -> None:
+        client = TestClient(app)
+        response = client.post(
+            "/api/generate",
+            json={
+                "script": "[主持人A]: 哈囉",
+                "host_count": 1,
+                "voice_assignments": [{"role": "主持人A", "voice": "not-a-voice"}],
+                "audio": {"bgm_enabled": False, "output_format": "mp3"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_preview_rejects_unknown_voice_id(self) -> None:
+        client = TestClient(app)
+        response = client.post("/api/preview", json={"text": "hello", "voice": "not-a-voice"})
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_generate_rejects_too_long_script(self) -> None:
+        client = TestClient(app)
+        response = client.post(
+            "/api/generate",
+            json={
+                "script": "x" * 50001,
+                "host_count": 1,
+                "voice_assignments": [{"role": "主持人A", "voice": "zh-TW-HsiaoChenNeural"}],
+                "audio": {"bgm_enabled": False, "output_format": "mp3"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_generate_rejects_too_many_voice_assignments(self) -> None:
+        client = TestClient(app)
+        response = client.post(
+            "/api/generate",
+            json={
+                "script": "[A]: one",
+                "host_count": 4,
+                "voice_assignments": [
+                    {"role": f"host{i}", "voice": "zh-TW-HsiaoChenNeural"}
+                    for i in range(5)
+                ],
+                "audio": {"bgm_enabled": False, "output_format": "mp3"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_generate_rejects_invalid_output_format(self) -> None:
+        client = TestClient(app)
+        response = client.post(
+            "/api/generate",
+            json={
+                "script": "[主持人A]: 哈囉",
+                "host_count": 1,
+                "voice_assignments": [{"role": "主持人A", "voice": "zh-TW-HsiaoChenNeural"}],
+                "audio": {"bgm_enabled": False, "output_format": "flac"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_generate_rate_limit_returns_429(self) -> None:
+        client = TestClient(app)
+        payload = {
+            "script": "[主持人A]: 哈囉",
+            "host_count": 1,
+            "voice_assignments": [{"role": "主持人A", "voice": "zh-TW-HsiaoChenNeural"}],
+            "audio": {"bgm_enabled": True, "bgm_id": "missing-track", "output_format": "mp3"},
+        }
+
+        with patch.dict(os.environ, {"RATE_LIMIT_GENERATE_PER_MINUTE": "2"}):
+            self.assertEqual(client.post("/api/generate", json=payload).status_code, 400)
+            self.assertEqual(client.post("/api/generate", json=payload).status_code, 400)
+            self.assertEqual(client.post("/api/generate", json=payload).status_code, 429)
+
+    def test_preview_rate_limit_returns_429(self) -> None:
+        client = TestClient(app)
+        payload = {"text": "hello", "voice": "nova"}
+
+        with patch.dict(os.environ, {"RATE_LIMIT_PREVIEW_PER_MINUTE": "2", "OPENAI_API_KEY": ""}):
+            with patch("backend.routers.preview.logger.exception"):
+                self.assertEqual(client.post("/api/preview", json=payload).status_code, 503)
+                self.assertEqual(client.post("/api/preview", json=payload).status_code, 503)
+            self.assertEqual(client.post("/api/preview", json=payload).status_code, 429)
+
+    def test_script_generation_rate_limit_returns_429(self) -> None:
+        client = TestClient(app)
+        payload = {"topic": "AI", "duration_min": 5, "host_count": 1}
+
+        with patch.dict(os.environ, {"RATE_LIMIT_AI_PER_MINUTE": "2", "ANTHROPIC_API_KEY": ""}):
+            self.assertEqual(client.post("/api/script/generate", json=payload).status_code, 503)
+            self.assertEqual(client.post("/api/script/generate", json=payload).status_code, 503)
+            self.assertEqual(client.post("/api/script/generate", json=payload).status_code, 429)
+
+    def test_analyze_rate_limit_returns_429(self) -> None:
+        client = TestClient(app)
+        payload = {"text": "這是一段足夠長的分析文字內容。", "language": "zh-TW"}
+
+        with patch.dict(os.environ, {"RATE_LIMIT_AI_PER_MINUTE": "2", "ANTHROPIC_API_KEY": ""}):
+            self.assertEqual(client.post("/api/analyze", json=payload).status_code, 503)
+            self.assertEqual(client.post("/api/analyze", json=payload).status_code, 503)
+            self.assertEqual(client.post("/api/analyze", json=payload).status_code, 429)
+
+    def test_generate_job_hides_raw_synthesis_errors(self) -> None:
+        async def fail_run_text(*args, **kwargs) -> str:
+            raise RuntimeError("secret path /tmp/api-key")
+
+        request = {
+            "script": "[主持人A]: 哈囉",
+            "host_count": 1,
+            "voice_assignments": [{"role": "主持人A", "voice": "zh-TW-HsiaoChenNeural"}],
+            "audio": {"bgm_enabled": False, "output_format": "mp3"},
+        }
+        from backend.models.schemas import GenerateRequest
+
+        job_id = "failed-job"
+        jobs[job_id] = Job(id=job_id)
+        try:
+            with (
+                patch("backend.routers.generate.PodcastPipeline.run_text", new=fail_run_text),
+                patch("backend.routers.generate.logger.exception"),
+            ):
+                asyncio.run(_run_job(job_id, GenerateRequest(**request)))
+
+            self.assertEqual(jobs[job_id].error, GENERIC_GENERATE_ERROR)
+            event = jobs[job_id].events.get_nowait()
+            self.assertEqual(event["error"], GENERIC_GENERATE_ERROR)
+            self.assertNotIn("secret", event["message"])
+        finally:
+            jobs.pop(job_id, None)
 
     def test_done_event_snapshot_includes_file_url(self) -> None:
         client = TestClient(app)
@@ -183,6 +335,43 @@ class ApiValidationTests(unittest.TestCase):
                 self.assertFalse(output_path.exists())
             finally:
                 jobs.pop(job.id, None)
+
+
+class ProxyClientIpTests(unittest.TestCase):
+    class _Client:
+        def __init__(self, host: str) -> None:
+            self.host = host
+
+    class _Request:
+        def __init__(self, host: str, headers: dict[str, str]) -> None:
+            self.client = ProxyClientIpTests._Client(host)
+            self.headers = headers
+
+    def test_trusted_proxy_uses_forwarded_for(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "TRUST_PROXY_HEADERS": "true",
+                "TRUSTED_PROXY_CIDRS": "10.0.0.0/8",
+            },
+        ):
+            config = Config()
+            request = self._Request("10.1.2.3", {"x-forwarded-for": "203.0.113.7, 10.1.2.3"})
+
+            self.assertEqual(get_client_ip(request, config), "203.0.113.7")
+
+    def test_untrusted_proxy_ignores_forwarded_for(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "TRUST_PROXY_HEADERS": "true",
+                "TRUSTED_PROXY_CIDRS": "10.0.0.0/8",
+            },
+        ):
+            config = Config()
+            request = self._Request("192.0.2.10", {"x-forwarded-for": "203.0.113.7"})
+
+            self.assertEqual(get_client_ip(request, config), "192.0.2.10")
 
 
 if __name__ == "__main__":

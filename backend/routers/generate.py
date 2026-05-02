@@ -1,39 +1,49 @@
 from __future__ import annotations
 
-import asyncio
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from backend.jobs import Job, jobs, prune_jobs
 from backend.models.schemas import GenerateRequest, GenerateResponse, JobSnapshot
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track
 from backend.config import voice_provider
+from backend.security import enforce_rate_limit
 from config import Config, Provider
 from core.script_parser import parse_script_details
 from pipeline.podcast_pipeline import PodcastPipeline
 
 router = APIRouter(prefix="/api", tags=["generate"])
+logger = logging.getLogger(__name__)
+GENERIC_GENERATE_ERROR = "Audio synthesis failed. Please try again."
 
 
 @router.post("/generate", response_model=GenerateResponse)
-async def generate(request: GenerateRequest, background_tasks: BackgroundTasks) -> GenerateResponse:
+async def generate(request: Request, payload: GenerateRequest, background_tasks: BackgroundTasks) -> GenerateResponse:
+    runtime_config = Config()
+    enforce_rate_limit(
+        request,
+        runtime_config,
+        bucket="generate",
+        limit_per_minute=runtime_config.rate_limit_generate_per_minute,
+    )
     prune_jobs()
-    parsed = parse_script_details(request.script)
-    if parsed.speaker_count > request.host_count:
-        raise HTTPException(status_code=400, detail=f"Script has {parsed.speaker_count} speakers but host_count is {request.host_count}.")
+    parsed = parse_script_details(payload.script)
+    if parsed.speaker_count > payload.host_count:
+        raise HTTPException(status_code=400, detail=f"Script has {parsed.speaker_count} speakers but host_count is {payload.host_count}.")
     if parsed.speaker_count > 4:
         raise HTTPException(status_code=400, detail="Only 1-4 speakers are supported.")
-    providers = {voice_provider(item.voice) for item in request.voice_assignments}
+    providers = {voice_provider(item.voice) for item in payload.voice_assignments}
     if len(providers) > 1:
         raise HTTPException(status_code=400, detail="Mixed TTS providers are not supported in one job yet.")
-    if request.audio.bgm_enabled and request.audio.bgm_id:
+    if payload.audio.bgm_enabled and payload.audio.bgm_id:
         try:
-            get_bgm_track(request.audio.bgm_id)
+            get_bgm_track(payload.audio.bgm_id)
         except BgmNotFoundError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -41,7 +51,7 @@ async def generate(request: GenerateRequest, background_tasks: BackgroundTasks) 
     job = Job(id=job_id)
     jobs[job_id] = job
     await job.publish("queued", 0, "Queued.")
-    background_tasks.add_task(_run_job, job_id, request)
+    background_tasks.add_task(_run_job, job_id, payload)
     return GenerateResponse(job_id=job_id, events_url=f"/api/generate/{job_id}/events", file_url=None)
 
 
@@ -115,8 +125,9 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
         job.output_path = Path(result)
         await job.publish("done", 100, "Done.", file_url=f"/api/files/{job_id}")
     except Exception as exc:
-        job.error = str(exc)
-        await job.publish("failed", job.progress, str(exc), error=str(exc))
+        logger.exception("Generate job failed", extra={"job_id": job_id})
+        job.error = GENERIC_GENERATE_ERROR
+        await job.publish("failed", job.progress, GENERIC_GENERATE_ERROR, error=GENERIC_GENERATE_ERROR)
 
 
 def _job_or_404(job_id: str) -> Job:

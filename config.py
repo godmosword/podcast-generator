@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from enum import Enum
+from ipaddress import ip_network
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -46,12 +47,27 @@ ELEVENLABS_VOICE_MAP: dict[str, str] = {
 def _env_list(name: str, default: str) -> list[str]:
     raw = os.getenv(name, default)
     values = [item.strip() for item in raw.split(",") if item.strip()]
-    return values or [default]
+    return values
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    return int(raw)
 
 
 @dataclass
 class Config:
-    provider: Provider = Provider(os.getenv("TTS_PROVIDER", "edge"))
+    app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
+    provider: Provider = field(default_factory=lambda: Provider(os.getenv("TTS_PROVIDER", "edge")))
     output_dir: Path = field(default_factory=lambda: Path(os.getenv("OUTPUT_DIR", "output")))
     bgm_path: str | None = os.getenv("BGM_PATH") or None
     bgm_volume_db: float = -20.0
@@ -66,7 +82,28 @@ class Config:
     concurrent_requests: int = 5
     voice_mode: str = "conversational"
     voice_quality: str = "standard"
-    cors_origins: list[str] = field(default_factory=lambda: _env_list("CORS_ORIGINS", "*"))
+    cors_origins: list[str] = field(default_factory=lambda: _env_list("CORS_ORIGINS", "http://localhost:3000"))
+    trust_proxy_headers: bool = field(default_factory=lambda: _env_bool("TRUST_PROXY_HEADERS", False))
+    trusted_proxy_cidrs: list[str] = field(default_factory=lambda: _env_list("TRUSTED_PROXY_CIDRS", ""))
+    rate_limit_generate_per_minute: int = field(default_factory=lambda: _env_int("RATE_LIMIT_GENERATE_PER_MINUTE", 5))
+    rate_limit_preview_per_minute: int = field(default_factory=lambda: _env_int("RATE_LIMIT_PREVIEW_PER_MINUTE", 20))
+    rate_limit_ai_per_minute: int = field(default_factory=lambda: _env_int("RATE_LIMIT_AI_PER_MINUTE", 10))
+
+    def __post_init__(self) -> None:
+        self.app_env = self.app_env.strip().lower()
+        if self.app_env == "production" and (not self.cors_origins or "*" in self.cors_origins):
+            raise ValueError("CORS_ORIGINS must be configured with explicit origins when APP_ENV=production.")
+
+        for cidr in self.trusted_proxy_cidrs:
+            ip_network(cidr, strict=False)
+
+        for name, value in {
+            "RATE_LIMIT_GENERATE_PER_MINUTE": self.rate_limit_generate_per_minute,
+            "RATE_LIMIT_PREVIEW_PER_MINUTE": self.rate_limit_preview_per_minute,
+            "RATE_LIMIT_AI_PER_MINUTE": self.rate_limit_ai_per_minute,
+        }.items():
+            if value <= 0:
+                raise ValueError(f"{name} must be greater than 0.")
 
     def voice_map(self) -> dict[str, str]:
         if self.provider == Provider.OPENAI:
