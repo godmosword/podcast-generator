@@ -15,6 +15,7 @@ class ElevenLabsProvider(AbstractTTSProvider):
         self._client = AsyncElevenLabs(api_key=api_key)
 
     async def synthesize(self, text: str, voice: str, **kwargs) -> bytes:
+        voice_id = voice.removeprefix("elevenlabs:")
         voice_mode = str(kwargs.get("voice_mode", "conversational"))
 
         if voice_mode == "conversational":
@@ -34,7 +35,7 @@ class ElevenLabsProvider(AbstractTTSProvider):
         use_speaker_boost = bool(kwargs.get("use_speaker_boost", default_boost))
 
         audio_stream = self._client.text_to_speech.convert(
-            voice,
+            voice_id,
             text=text,
             voice_settings=VoiceSettings(
                 stability=stability,

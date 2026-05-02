@@ -75,6 +75,7 @@ class TTSConfigTests(unittest.TestCase):
     def test_voice_provider_detects_paid_provider_voices(self) -> None:
         self.assertEqual(voice_provider("nova"), Provider.OPENAI)
         self.assertEqual(voice_provider("Rachel"), Provider.ELEVENLABS)
+        self.assertEqual(voice_provider("elevenlabs:custom-voice-id"), Provider.ELEVENLABS)
         self.assertEqual(voice_provider("zh-TW-HsiaoChenNeural"), Provider.EDGE)
 
     def test_production_cors_rejects_wildcard_or_empty_origins(self) -> None:
@@ -179,6 +180,13 @@ class ApiValidationTests(unittest.TestCase):
         response = client.post("/api/preview", json={"text": "hello", "voice": "not-a-voice"})
 
         self.assertEqual(response.status_code, 422)
+
+    def test_preview_accepts_elevenlabs_prefixed_voice_id(self) -> None:
+        client = TestClient(app)
+        with patch("backend.routers.preview.logger.exception"):
+            response = client.post("/api/preview", json={"text": "hello", "voice": "elevenlabs:custom-voice-id"})
+
+        self.assertNotEqual(response.status_code, 422)
 
     def test_generate_rejects_too_long_script(self) -> None:
         client = TestClient(app)
