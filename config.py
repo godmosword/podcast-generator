@@ -31,8 +31,13 @@ DEFAULT_VOICE_MAP: dict[str, str] = {
 
 OPENAI_VOICE_MAP: dict[str, str] = {
     "主持人": "nova",
+    "主持人A": "nova",
+    "主持人B": "echo",
+    "主持人C": "alloy",
+    "主持人D": "fable",
     "來賓": "echo",
     "narrator": "alloy",
+    "speaker_1": "nova",
     "_default": "alloy",
 }
 
