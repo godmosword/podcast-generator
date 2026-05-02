@@ -2,16 +2,30 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from backend.config import VOICE_CATALOG
 
 
 OutputFormat = Literal["mp3", "wav"]
 JobStatus = Literal["queued", "parsing", "synthesizing", "mixing", "exporting", "done", "failed"]
+VALID_VOICE_IDS = {voice["id"] for voice in VOICE_CATALOG}
+
+
+def validate_voice_id(value: str) -> str:
+    if value not in VALID_VOICE_IDS:
+        raise ValueError(f"Unknown voice: {value}")
+    return value
 
 
 class VoiceAssignment(BaseModel):
     role: str = Field(min_length=1, max_length=80)
     voice: str = Field(min_length=1, max_length=120)
+
+    @field_validator("voice")
+    @classmethod
+    def voice_must_be_known(cls, value: str) -> str:
+        return validate_voice_id(value)
 
 
 class AudioSettings(BaseModel):
@@ -28,13 +42,13 @@ class AudioSettings(BaseModel):
 
 
 class GenerateRequest(BaseModel):
-    script: str = Field(min_length=1)
+    script: str = Field(min_length=1, max_length=50000)
     host_count: int = Field(default=1, ge=1, le=4)
-    voice_assignments: list[VoiceAssignment] = Field(default_factory=list)
+    voice_assignments: list[VoiceAssignment] = Field(default_factory=list, max_length=4)
     audio: AudioSettings = Field(default_factory=AudioSettings)
-    title: str | None = None
-    artist: str | None = None
-    album: str | None = None
+    title: str | None = Field(default=None, max_length=200)
+    artist: str | None = Field(default=None, max_length=200)
+    album: str | None = Field(default=None, max_length=200)
 
 
 class GenerateResponse(BaseModel):
@@ -47,6 +61,11 @@ class PreviewRequest(BaseModel):
     text: str = Field(min_length=1, max_length=500)
     voice: str = Field(min_length=1, max_length=120)
     seconds: int = Field(default=15, ge=1, le=15)
+
+    @field_validator("voice")
+    @classmethod
+    def voice_must_be_known(cls, value: str) -> str:
+        return validate_voice_id(value)
 
 
 class JobSnapshot(BaseModel):

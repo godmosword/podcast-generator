@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-import time
-from collections import defaultdict
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from backend.security import enforce_rate_limit
 from config import Config
 from core.script_generator import ScriptSpec, generate_script
 
 router = APIRouter(prefix="/api", tags=["script"])
-
-# Simple in-memory rate limiter: max 10 requests per 60 seconds per IP
-_rate_buckets: dict[str, list[float]] = defaultdict(list)
-_RATE_WINDOW_SEC = 60
-_RATE_MAX = 10
+logger = logging.getLogger(__name__)
 
 
 class ScriptGenerationRequest(BaseModel):
@@ -39,16 +35,9 @@ async def generate_script_endpoint(
     request: Request,
 ) -> ScriptGenerationResponse:
     config = Config()
+    enforce_rate_limit(request, config, bucket="script", limit_per_minute=config.rate_limit_ai_per_minute)
     if not config.anthropic_api_key:
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured on the server.")
-
-    client_ip = request.client.host if request.client else "unknown"
-    now = time.monotonic()
-    bucket = _rate_buckets[client_ip]
-    _rate_buckets[client_ip] = [t for t in bucket if now - t < _RATE_WINDOW_SEC]
-    if len(_rate_buckets[client_ip]) >= _RATE_MAX:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before generating another script.")
-    _rate_buckets[client_ip].append(now)
 
     spec = ScriptSpec(
         topic=body.topic,
@@ -62,7 +51,8 @@ async def generate_script_endpoint(
     try:
         draft = await generate_script(spec, config.anthropic_api_key)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Script generation failed: {exc}") from exc
+        logger.exception("Script generation failed")
+        raise HTTPException(status_code=500, detail="Script generation failed. Please try again.") from exc
 
     return ScriptGenerationResponse(
         script=draft.script,

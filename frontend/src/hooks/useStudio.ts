@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   absoluteApiUrl,
   fetchBgmCatalog,
@@ -146,6 +146,21 @@ export function useStudio() {
   const [analysisContext, setAnalysisContext] = useState("");
 
   const visibleSlots = voiceSlots.slice(0, hostCount);
+  const eventsRef = useRef<EventSource | null>(null);
+  const voiceSlotsRef = useRef<VoiceSlot[]>(defaultSlots);
+
+  useEffect(() => {
+    voiceSlotsRef.current = voiceSlots;
+  }, [voiceSlots]);
+
+  useEffect(() => {
+    return () => {
+      eventsRef.current?.close();
+      voiceSlotsRef.current.forEach((slot) => {
+        if (slot.previewUrl) URL.revokeObjectURL(slot.previewUrl);
+      });
+    };
+  }, []);
 
   // Restore draft from localStorage on first mount
   useEffect(() => {
@@ -161,8 +176,13 @@ export function useStudio() {
     if (draft.format === "mp3" || draft.format === "wav") setFormat(draft.format);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const draftState = useMemo(
+    () => ({ script, hostCount, speed, pauseMs, bgmEnabled, bgmVolumeDb, bgmFadeMs, format }),
+    [script, hostCount, speed, pauseMs, bgmEnabled, bgmVolumeDb, bgmFadeMs, format],
+  );
+
   // Auto-save key state to localStorage (3s debounce)
-  useAutoSave({ script, hostCount, speed, pauseMs, bgmEnabled, bgmVolumeDb, bgmFadeMs, format });
+  useAutoSave(draftState);
 
   useEffect(() => {
     fetchVoices()
@@ -212,8 +232,20 @@ export function useStudio() {
   }, [script]);
 
   function updateSlot(id: number, changes: Partial<VoiceSlot>) {
+    const hasPreviewUrl = Object.prototype.hasOwnProperty.call(changes, "previewUrl");
     setVoiceSlots((slots) =>
-      slots.map((slot) => (slot.id === id ? { ...slot, ...changes, sampleState: changes.voice ? "idle" : slot.sampleState } : slot)),
+      slots.map((slot) => {
+        if (slot.id !== id) return slot;
+        if (changes.voice && slot.previewUrl) {
+          URL.revokeObjectURL(slot.previewUrl);
+        }
+        return {
+          ...slot,
+          ...changes,
+          previewUrl: changes.voice ? undefined : hasPreviewUrl ? changes.previewUrl : slot.previewUrl,
+          sampleState: changes.voice ? "idle" : changes.sampleState ?? slot.sampleState,
+        };
+      }),
     );
   }
 
@@ -234,7 +266,10 @@ export function useStudio() {
             : voiceInfo?.language.startsWith("es")
               ? "Esta es una muestra de voz de Wavescript."
               : "This is a Wavescript voice preview.";
-    updateSlot(id, { sampleState: "loading" });
+    if (slot.previewUrl) {
+      URL.revokeObjectURL(slot.previewUrl);
+    }
+    updateSlot(id, { sampleState: "loading", previewUrl: undefined });
     try {
       const url = await previewVoice(previewText, slot.voice);
       updateSlot(id, { sampleState: "ready", previewUrl: url });
@@ -287,6 +322,7 @@ export function useStudio() {
     setStatusMessage("送出任務");
 
     try {
+      eventsRef.current?.close();
       const selectedProviders = new Set(visibleSlots.map((slot) => providerForVoice(voiceCatalog, slot.voice)).filter(Boolean));
       if (selectedProviders.size > 1) {
         setIsGenerating(false);
@@ -321,24 +357,39 @@ export function useStudio() {
       };
 
       const events = openJobEvents(response.events_url);
+      eventsRef.current = events;
+      const closeEvents = () => {
+        events.close();
+        if (eventsRef.current === events) {
+          eventsRef.current = null;
+        }
+      };
       events.onmessage = (event) => {
-        const data = JSON.parse(event.data) as JobEvent;
+        let data: JobEvent;
+        try {
+          data = JSON.parse(event.data) as JobEvent;
+        } catch {
+          setIsGenerating(false);
+          setError("Connection error. Please refresh and try again.");
+          closeEvents();
+          return;
+        }
         setProgress(data.progress);
         setStatusMessage(data.message);
         if (data.status === "done") {
-          events.close();
+          closeEvents();
           void finishJob(data.file_url);
         }
         if (data.status === "failed") {
           setIsGenerating(false);
           setError(data.error ?? data.message);
-          events.close();
+          closeEvents();
         }
       };
       events.onerror = () => {
         setIsGenerating(false);
         setError("SSE connection failed.");
-        events.close();
+        closeEvents();
       };
     } catch (generateError) {
       setIsGenerating(false);

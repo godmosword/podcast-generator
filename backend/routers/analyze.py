@@ -1,22 +1,19 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
-import time
-from collections import defaultdict
 from typing import Literal
 
 import anthropic
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from backend.security import enforce_rate_limit
 from config import Config
 
 router = APIRouter(prefix="/api", tags=["analyze"])
-
-_rate_buckets: dict[str, list[float]] = defaultdict(list)
-_RATE_WINDOW_SEC = 60
-_RATE_MAX = 10
+logger = logging.getLogger(__name__)
 
 _LANG_LABELS = {
     "zh-TW": "繁體中文",
@@ -90,15 +87,9 @@ def _strip_fence(raw: str) -> str:
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_text(body: AnalyzeRequest, request: Request) -> AnalyzeResponse:
     config = Config()
+    enforce_rate_limit(request, config, bucket="analyze", limit_per_minute=config.rate_limit_ai_per_minute)
     if not config.anthropic_api_key:
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured on the server.")
-
-    client_ip = request.client.host if request.client else "unknown"
-    now = time.monotonic()
-    _rate_buckets[client_ip] = [t for t in _rate_buckets[client_ip] if now - t < _RATE_WINDOW_SEC]
-    if len(_rate_buckets[client_ip]) >= _RATE_MAX:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before analyzing again.")
-    _rate_buckets[client_ip].append(now)
 
     lang_label = _LANG_LABELS.get(body.language, "繁體中文")
     user_parts = []
@@ -120,7 +111,8 @@ async def analyze_text(body: AnalyzeRequest, request: Request) -> AnalyzeRespons
             messages=[{"role": "user", "content": user_content}],
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}") from exc
+        logger.exception("Analysis failed")
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again.") from exc
 
     raw = _strip_fence(message.content[0].text)
     try:

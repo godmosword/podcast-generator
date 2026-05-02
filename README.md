@@ -58,15 +58,24 @@ Docker backend image 會自動安裝 `ffmpeg`。如果你直接在本機跑 back
 ```env
 OPENAI_API_KEY=
 ELEVENLABS_API_KEY=
+ANTHROPIC_API_KEY=
+APP_ENV=development
 BGM_PATH=
 TTS_PROVIDER=edge
 OUTPUT_DIR=output
 JOB_TTL_SECONDS=21600
 CORS_ORIGINS=http://localhost:3000
+TRUST_PROXY_HEADERS=false
+TRUSTED_PROXY_CIDRS=
+RATE_LIMIT_GENERATE_PER_MINUTE=5
+RATE_LIMIT_PREVIEW_PER_MINUTE=20
+RATE_LIMIT_AI_PER_MINUTE=10
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
 Edge TTS 是預設 provider，不需要 API key。
+
+正式環境請設定 `APP_ENV=production`，並把 `CORS_ORIGINS` 改成實際前端網域；production 模式不允許空值或 `*`。若 backend 位於 CDN 或反向代理後方，請設定 `TRUST_PROXY_HEADERS=true` 並填入可信代理的 `TRUSTED_PROXY_CIDRS`，否則限流會使用直接連線 IP。
 
 ### Docker 啟動
 
@@ -79,6 +88,8 @@ docker compose up --build
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:8000`
 - API health: `http://localhost:8000/api/health`
+
+Docker backend 會以非 root 使用者執行。若使用 `./output:/app/output` bind mount，請確保主機上的 `output/` 目錄允許容器使用者寫入。
 
 ### 本機開發
 

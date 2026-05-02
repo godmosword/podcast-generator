@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -18,6 +19,7 @@ from utils.file_utils import ensure_dir, read_text
 from utils.text_chunker import chunk_text
 
 ProgressCallback = Callable[[str, int, str], Awaitable[None]]
+logger = logging.getLogger(__name__)
 
 
 def _build_provider(config: Config) -> AbstractTTSProvider:
@@ -94,7 +96,7 @@ class PodcastPipeline:
 
         voice_map = map_roles_to_voices(parsed.speakers, config, overrides=voice_overrides)
 
-        print(f"  Parsed {len(segments)} segments from script.")
+        logger.info("Parsed %s segments from script.", len(segments))
         await _emit(progress, "parsing", 10, f"Parsed {len(segments)} segments.")
 
         combined = AudioSegment.empty()
@@ -107,7 +109,14 @@ class PodcastPipeline:
 
             voice = voice_map.get(segment.speaker, config.voice_for(segment.speaker))
             chunks = chunk_text(segment.text, max_chars=config.chunk_size)
-            print(f"  [{i+1}/{len(segments)}] {segment.speaker} ({len(chunks)} chunk(s), voice={voice})")
+            logger.info(
+                "Synthesizing segment %s/%s for speaker %s with %s chunk(s).",
+                i + 1,
+                len(segments),
+                segment.speaker,
+                len(chunks),
+            )
+            logger.debug("Using voice %s for speaker %s.", voice, segment.speaker)
             synthesized_count = len([item for item in segments[: i + 1] if not item.is_silence])
             pct = 10 + int((synthesized_count / max(1, len(speech_segments))) * 65)
             await _emit(progress, "synthesizing", pct, f"Synthesizing {segment.speaker}.")
@@ -131,7 +140,7 @@ class PodcastPipeline:
         effective_bgm_path = bgm_path or config.bgm_path
         effective_bgm_volume_db = config.bgm_volume_db if bgm_volume_db is None else bgm_volume_db
         if bgm_enabled and effective_bgm_path:
-            print(f"  Mixing BGM from {effective_bgm_path}")
+            logger.info("Mixing BGM from %s.", effective_bgm_path)
             combined = mix_bgm(
                 combined,
                 effective_bgm_path,
@@ -143,7 +152,7 @@ class PodcastPipeline:
         ensure_dir(Path(output_path).parent)
         await _emit(progress, "exporting", 92, f"Exporting {output_format.upper()}.")
         result = export_audio(combined, output_path, metadata=metadata, output_format=output_format)
-        print(f"  Exported: {result}")
+        logger.info("Exported podcast audio to %s.", result)
         await _emit(progress, "done", 100, "Export complete.")
         return result
 
