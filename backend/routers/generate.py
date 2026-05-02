@@ -84,6 +84,9 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
     output_format = request.audio.output_format
     output_path = Path("output") / f"{job_id}.{output_format}"
     config = Config()
+    selected_providers = {voice_provider(item.voice) for item in request.voice_assignments}
+    if selected_providers:
+        config.provider = selected_providers.pop()
     config.segment_pause_ms = request.audio.pause_ms
     config.speech_speed = request.audio.speed
     config.voice_mode = request.audio.voice_mode

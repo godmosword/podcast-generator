@@ -13,6 +13,8 @@ VALID_VOICE_IDS = {voice["id"] for voice in VOICE_CATALOG}
 
 
 def validate_voice_id(value: str) -> str:
+    if value.startswith("elevenlabs:") and len(value) > len("elevenlabs:"):
+        return value
     if value not in VALID_VOICE_IDS:
         raise ValueError(f"Unknown voice: {value}")
     return value

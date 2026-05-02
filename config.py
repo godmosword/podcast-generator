@@ -72,7 +72,7 @@ def _env_int(name: str, default: int) -> int:
 @dataclass
 class Config:
     app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
-    provider: Provider = field(default_factory=lambda: Provider(os.getenv("TTS_PROVIDER", "openai")))
+    provider: Provider = field(default_factory=lambda: Provider(os.getenv("TTS_PROVIDER", "edge")))
     output_dir: Path = field(default_factory=lambda: Path(os.getenv("OUTPUT_DIR", "output")))
     bgm_path: str | None = os.getenv("BGM_PATH") or None
     bgm_volume_db: float = -20.0

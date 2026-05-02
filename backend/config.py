@@ -39,12 +39,14 @@ VOICE_CATALOG = [
     {"id": "onyx", "label": "Onyx", "provider": Provider.OPENAI.value, "language": "multi", "tone": "deep"},
     {"id": "shimmer", "label": "Shimmer", "provider": Provider.OPENAI.value, "language": "multi", "tone": "bright"},
     # ElevenLabs
-    {"id": "Rachel", "label": "Rachel", "provider": Provider.ELEVENLABS.value, "language": "multi", "tone": "adult female"},
-    {"id": "Adam", "label": "Adam", "provider": Provider.ELEVENLABS.value, "language": "multi", "tone": "adult male"},
+    {"id": "elevenlabs:Rachel", "label": "Rachel", "provider": Provider.ELEVENLABS.value, "language": "multi", "tone": "adult female"},
+    {"id": "elevenlabs:Adam", "label": "Adam", "provider": Provider.ELEVENLABS.value, "language": "multi", "tone": "adult male"},
 ]
 
 
 def voice_provider(voice_id: str) -> Provider:
+    if voice_id.startswith("elevenlabs:"):
+        return Provider.ELEVENLABS
     openai_voices = set(OPENAI_VOICE_MAP.values()) | {"nova", "alloy", "echo", "fable", "onyx", "shimmer"}
     elevenlabs_voices = set(ELEVENLABS_VOICE_MAP.values()) | {"Rachel", "Adam"}
     base_voice = base_voice_id(voice_id)
