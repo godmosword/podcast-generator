@@ -40,6 +40,12 @@ export type VoiceOption = {
 };
 
 const fallbackVoices: VoiceOption[] = [
+  { id: "alloy", label: "Alloy", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "balanced" },
+  { id: "nova", label: "Nova", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "warm" },
+  { id: "echo", label: "Echo", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "clear" },
+  { id: "fable", label: "Fable", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "storytelling" },
+  { id: "onyx", label: "Onyx", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "deep" },
+  { id: "shimmer", label: "Shimmer", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "bright" },
   { id: "zh-TW-YunJheNeural", label: "建宏", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人男聲" },
   { id: "zh-TW-YunJheNeural__adult-male-2", label: "柏宇", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人男聲低沉" },
   { id: "zh-TW-HsiaoChenNeural", label: "雅琪", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人女聲" },
@@ -110,10 +116,10 @@ const defaultScript = `[主持人A]: 大家好，歡迎收聽 Wavescript。
 [主持人A]: 我們會從文稿、聲線到輸出流程一路拆解。`;
 
 const defaultSlots: VoiceSlot[] = [
-  { id: 1, role: "主持人A", voice: "zh-TW-HsiaoChenNeural", sampleState: "idle" },
-  { id: 2, role: "主持人B", voice: "zh-TW-YunJheNeural", sampleState: "idle" },
-  { id: 3, role: "主持人C", voice: "zh-TW-HsiaoYuNeural", sampleState: "idle" },
-  { id: 4, role: "主持人D", voice: "zh-TW-YunJheNeural__adult-male-2", sampleState: "idle" },
+  { id: 1, role: "主持人A", voice: "nova", sampleState: "idle" },
+  { id: 2, role: "主持人B", voice: "echo", sampleState: "idle" },
+  { id: 3, role: "主持人C", voice: "alloy", sampleState: "idle" },
+  { id: 4, role: "主持人D", voice: "fable", sampleState: "idle" },
 ];
 
 export function useStudio() {

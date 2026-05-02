@@ -36,8 +36,8 @@ async def generate_script_endpoint(
 ) -> ScriptGenerationResponse:
     config = Config()
     enforce_rate_limit(request, config, bucket="script", limit_per_minute=config.rate_limit_ai_per_minute)
-    if not config.anthropic_api_key:
-        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured on the server.")
+    if not config.gemini_api_key:
+        raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured on the server.")
 
     spec = ScriptSpec(
         topic=body.topic,
@@ -49,7 +49,7 @@ async def generate_script_endpoint(
     )
 
     try:
-        draft = await generate_script(spec, config.anthropic_api_key)
+        draft = await generate_script(spec, config.gemini_api_key, config.gemini_model)
     except Exception as exc:
         logger.exception("Script generation failed")
         raise HTTPException(status_code=500, detail="Script generation failed. Please try again.") from exc

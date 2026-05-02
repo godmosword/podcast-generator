@@ -253,7 +253,7 @@ class ApiValidationTests(unittest.TestCase):
         client = TestClient(app)
         payload = {"topic": "AI", "duration_min": 5, "host_count": 1}
 
-        with patch.dict(os.environ, {"RATE_LIMIT_AI_PER_MINUTE": "2", "ANTHROPIC_API_KEY": ""}):
+        with patch.dict(os.environ, {"RATE_LIMIT_AI_PER_MINUTE": "2", "GEMINI_API_KEY": ""}):
             self.assertEqual(client.post("/api/script/generate", json=payload).status_code, 503)
             self.assertEqual(client.post("/api/script/generate", json=payload).status_code, 503)
             self.assertEqual(client.post("/api/script/generate", json=payload).status_code, 429)
@@ -262,7 +262,7 @@ class ApiValidationTests(unittest.TestCase):
         client = TestClient(app)
         payload = {"text": "這是一段足夠長的分析文字內容。", "language": "zh-TW"}
 
-        with patch.dict(os.environ, {"RATE_LIMIT_AI_PER_MINUTE": "2", "ANTHROPIC_API_KEY": ""}):
+        with patch.dict(os.environ, {"RATE_LIMIT_AI_PER_MINUTE": "2", "GEMINI_API_KEY": ""}):
             self.assertEqual(client.post("/api/analyze", json=payload).status_code, 503)
             self.assertEqual(client.post("/api/analyze", json=payload).status_code, 503)
             self.assertEqual(client.post("/api/analyze", json=payload).status_code, 429)

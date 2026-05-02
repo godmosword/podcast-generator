@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import re
+import asyncio
 from typing import Literal
 
-import anthropic
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -84,12 +84,30 @@ def _strip_fence(raw: str) -> str:
     return raw
 
 
+async def _generate_analysis(api_key: str, model: str, user_content: str) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    response = await asyncio.to_thread(
+        client.models.generate_content,
+        model=model,
+        contents=user_content,
+        config=types.GenerateContentConfig(
+            system_instruction=_SYSTEM_PROMPT,
+            max_output_tokens=2048,
+            response_mime_type="application/json",
+        ),
+    )
+    return response.text or ""
+
+
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_text(body: AnalyzeRequest, request: Request) -> AnalyzeResponse:
     config = Config()
     enforce_rate_limit(request, config, bucket="analyze", limit_per_minute=config.rate_limit_ai_per_minute)
-    if not config.anthropic_api_key:
-        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY is not configured on the server.")
+    if not config.gemini_api_key:
+        raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured on the server.")
 
     lang_label = _LANG_LABELS.get(body.language, "繁體中文")
     user_parts = []
@@ -102,19 +120,13 @@ async def analyze_text(body: AnalyzeRequest, request: Request) -> AnalyzeRespons
         )
     user_content = "\n\n".join(user_parts)
 
-    client = anthropic.AsyncAnthropic(api_key=config.anthropic_api_key)
     try:
-        message = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2048,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
-        )
+        raw = await _generate_analysis(config.gemini_api_key, config.gemini_model, user_content)
     except Exception as exc:
         logger.exception("Analysis failed")
         raise HTTPException(status_code=500, detail="Analysis failed. Please try again.") from exc
 
-    raw = _strip_fence(message.content[0].text)
+    raw = _strip_fence(raw)
     try:
         data = json.loads(raw)
         findings = [AnalysisFinding(**f) for f in data.get("findings", [])]

@@ -18,7 +18,7 @@ app = typer.Typer(help="Podcast voice generator — convert scripts to MP3 podca
 def generate(
     script: str = typer.Option(..., "--script", "-s", help="Path to script file (.txt or .md)"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output MP3 path (default: output/<script_name>.mp3)"),
-    provider: Provider = typer.Option(Provider.EDGE, "--provider", "-p", help="TTS provider: edge | openai | elevenlabs"),
+    provider: Provider = typer.Option(Provider.OPENAI, "--provider", "-p", help="TTS provider: edge | openai | elevenlabs"),
     bgm: Optional[str] = typer.Option(None, "--bgm", help="Background music file path"),
     title: Optional[str] = typer.Option(None, "--title", help="Podcast episode title (ID3 tag)"),
     artist: Optional[str] = typer.Option(None, "--artist", help="Podcast artist/host (ID3 tag)"),
