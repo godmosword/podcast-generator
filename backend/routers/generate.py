@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import StreamingResponse
 
-from backend.jobs import Job, jobs
+from backend.jobs import Job, jobs, prune_jobs
 from backend.models.schemas import GenerateRequest, GenerateResponse, JobSnapshot
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track
 from backend.config import voice_provider
@@ -22,6 +22,7 @@ router = APIRouter(prefix="/api", tags=["generate"])
 
 @router.post("/generate", response_model=GenerateResponse)
 async def generate(request: GenerateRequest, background_tasks: BackgroundTasks) -> GenerateResponse:
+    prune_jobs()
     parsed = parse_script_details(request.script)
     if parsed.speaker_count > request.host_count:
         raise HTTPException(status_code=400, detail=f"Script has {parsed.speaker_count} speakers but host_count is {request.host_count}.")

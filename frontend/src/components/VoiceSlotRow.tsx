@@ -1,26 +1,24 @@
 import { Play, Volume2 } from "lucide-react";
-import type { VoiceId, VoiceSlot } from "../hooks/useStudio";
-import { voices } from "../hooks/useStudio";
+import type { VoiceId, VoiceOption, VoiceSlot } from "../hooks/useStudio";
 
 type VoiceSlotRowProps = {
   slot: VoiceSlot;
+  voices: VoiceOption[];
   onChange: (changes: Partial<VoiceSlot>) => void;
   onPreview: () => void;
 };
 
-// Group voices by language for <optgroup> display
-const voiceGroups = voices.reduce<Array<{ langLabel: string; items: typeof voices }>>((groups, voice) => {
-  const existing = groups.find((g) => g.langLabel === voice.langLabel);
-  if (existing) {
-    existing.items.push(voice);
-  } else {
-    groups.push({ langLabel: voice.langLabel, items: [voice] });
-  }
-  return groups;
-}, []);
-
-export function VoiceSlotRow({ slot, onChange, onPreview }: VoiceSlotRowProps) {
+export function VoiceSlotRow({ slot, voices, onChange, onPreview }: VoiceSlotRowProps) {
   const selectedVoice = voices.find((voice) => voice.id === slot.voice);
+  const voiceGroups = voices.reduce<Array<{ langLabel: string; items: VoiceOption[] }>>((groups, voice) => {
+    const existing = groups.find((g) => g.langLabel === voice.langLabel);
+    if (existing) {
+      existing.items.push(voice);
+    } else {
+      groups.push({ langLabel: voice.langLabel, items: [voice] });
+    }
+    return groups;
+  }, []);
 
   return (
     <div className="voice-row">

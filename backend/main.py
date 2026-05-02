@@ -5,12 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import VOICE_CATALOG
 from backend.routers import analyze, bgm, classics, files, generate, preview, script
+from config import Config
 
 app = FastAPI(title="Wavescript API", version="0.1.0")
+config = Config()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -81,7 +81,8 @@ def mix_bgm(
 
     BGM is looped/trimmed to match speech duration and ducked by bgm_volume_db.
     """
-    bgm_raw = AudioSegment.from_file(bgm_path)
+    with open(bgm_path, "rb") as bgm_file:
+        bgm_raw = AudioSegment.from_file(bgm_file)
     speech_len = len(speech)
 
     # Loop BGM if shorter than speech

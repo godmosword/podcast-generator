@@ -43,6 +43,12 @@ ELEVENLABS_VOICE_MAP: dict[str, str] = {
 }
 
 
+def _env_list(name: str, default: str) -> list[str]:
+    raw = os.getenv(name, default)
+    values = [item.strip() for item in raw.split(",") if item.strip()]
+    return values or [default]
+
+
 @dataclass
 class Config:
     provider: Provider = Provider(os.getenv("TTS_PROVIDER", "edge"))
@@ -60,6 +66,7 @@ class Config:
     concurrent_requests: int = 5
     voice_mode: str = "conversational"
     voice_quality: str = "standard"
+    cors_origins: list[str] = field(default_factory=lambda: _env_list("CORS_ORIGINS", "*"))
 
     def voice_map(self) -> dict[str, str]:
         if self.provider == Provider.OPENAI:

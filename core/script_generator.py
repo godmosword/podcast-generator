@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 import anthropic
 
+from utils.script_metrics import measure_script, target_units_for_duration
+
 
 @dataclass(frozen=True)
 class ScriptSpec:
@@ -41,7 +43,7 @@ _LANG_LABELS: dict[str, str] = {
 
 def _build_system_prompt(spec: ScriptSpec) -> str:
     host_list = "、".join(f"主持人{chr(64 + i)}" for i in range(1, spec.host_count + 1))
-    target_chars = spec.duration_min * 200
+    target_units, unit_label, _, _ = target_units_for_duration(spec.duration_min, spec.language)
     lang_label = _LANG_LABELS.get(spec.language, spec.language)
     tone_label = _TONE_LABELS.get(spec.tone, spec.tone)
     conversational_note = (
@@ -60,7 +62,7 @@ RULES:
 1. Use ONLY these speaker tags: {host_list}
 2. NO narration, stage directions, markdown headings, or explanatory text outside of speaker lines
 3. Each turn: 1–4 sentences, vary length naturally for rhythm
-4. Target exactly {target_chars} Chinese characters total (±15%)
+4. Target exactly {target_units} {unit_label} total (±15%), excluding speaker tags
 5. Style: {tone_label}
 6. Distribute speaking time evenly across all {spec.host_count} host(s)
 7. Begin with a natural opening — host greetings, brief topic intro
@@ -89,13 +91,13 @@ def _validate_and_clean(raw: str, spec: ScriptSpec) -> tuple[str, list[str]]:
                 warnings.append(f"Unknown speaker '{speaker}' was removed.")
 
     script = "\n".join(clean_lines)
-    chinese_chars = len(re.findall(r"[一-鿿]", script))
-    target = spec.duration_min * 200
-    ratio = chinese_chars / max(1, target)
+    metrics = measure_script(script, spec.language)
+    target, _, short_label, _ = target_units_for_duration(spec.duration_min, spec.language)
+    ratio = metrics.unit_count / max(1, target)
     if ratio < 0.70:
-        warnings.append(f"Script may be too short ({chinese_chars} chars, target ~{target}).")
+        warnings.append(f"Script may be too short ({metrics.unit_count} {short_label}, target ~{target}).")
     elif ratio > 1.35:
-        warnings.append(f"Script may be too long ({chinese_chars} chars, target ~{target}).")
+        warnings.append(f"Script may be too long ({metrics.unit_count} {short_label}, target ~{target}).")
 
     return script, warnings
 
@@ -119,8 +121,9 @@ async def generate_script(spec: ScriptSpec, api_key: str) -> ScriptDraft:
     script, warnings = _validate_and_clean(raw, spec)
 
     # Single retry when too short
-    chinese_chars = len(re.findall(r"[一-鿿]", script))
-    if chinese_chars < spec.duration_min * 140:
+    metrics = measure_script(script, spec.language)
+    target, _, short_label, per_minute = target_units_for_duration(spec.duration_min, spec.language)
+    if metrics.unit_count < int(spec.duration_min * per_minute * 0.70):
         retry = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=8192,
@@ -131,8 +134,8 @@ async def generate_script(spec: ScriptSpec, api_key: str) -> ScriptDraft:
                 {
                     "role": "user",
                     "content": (
-                        f"The script is too short ({chinese_chars} chars). "
-                        f"Continue the dialogue to reach ~{spec.duration_min * 200} Chinese chars total. "
+                        f"The script is too short ({metrics.unit_count} {short_label}). "
+                        f"Continue the dialogue to reach ~{target} {short_label} total. "
                         "Same format, pick up naturally from the last line."
                     ),
                 },
@@ -140,7 +143,6 @@ async def generate_script(spec: ScriptSpec, api_key: str) -> ScriptDraft:
         )
         extra_raw = retry.content[0].text if retry.content else ""
         script, warnings = _validate_and_clean(raw + "\n" + extra_raw, spec)
-        chinese_chars = len(re.findall(r"[一-鿿]", script))
+        metrics = measure_script(script, spec.language)
 
-    estimated_duration_sec = int(chinese_chars / 200 * 60)
-    return ScriptDraft(script=script, estimated_duration_sec=estimated_duration_sec, warnings=warnings)
+    return ScriptDraft(script=script, estimated_duration_sec=metrics.estimated_duration_sec, warnings=warnings)

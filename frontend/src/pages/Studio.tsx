@@ -63,7 +63,7 @@ export function Studio() {
       <div className="workspace">
         <aside className="summary-rail">
           <div className="summary-block">
-            <span>字數</span>
+            <span>{studio.stats.unitLabel}</span>
             <strong>{studio.stats.chars.toLocaleString()}</strong>
           </div>
           <div className="summary-block accent-green">
@@ -123,6 +123,7 @@ export function Studio() {
                       onChange={(changes) => studio.updateSlot(slot.id, changes)}
                       onPreview={() => studio.previewSlot(slot.id)}
                       slot={slot}
+                      voices={studio.voices}
                     />
                   ))}
                 </div>

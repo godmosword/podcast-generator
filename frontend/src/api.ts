@@ -23,6 +23,14 @@ export type BgmTrack = {
   preview_url: string;
 };
 
+export type VoiceCatalogItem = {
+  id: string;
+  label: string;
+  provider: "edge" | "openai" | "elevenlabs";
+  language: string;
+  tone: string;
+};
+
 export type GenerateResponse = {
   job_id: string;
   events_url: string;
@@ -73,6 +81,14 @@ export async function fetchBgmCatalog(): Promise<BgmTrack[]> {
   const response = await fetch(`${API_BASE}/api/bgm`);
   if (!response.ok) {
     throw new Error("BGM catalog request failed.");
+  }
+  return response.json();
+}
+
+export async function fetchVoices(): Promise<VoiceCatalogItem[]> {
+  const response = await fetch(`${API_BASE}/api/voices`);
+  if (!response.ok) {
+    throw new Error("Voice catalog request failed.");
   }
   return response.json();
 }

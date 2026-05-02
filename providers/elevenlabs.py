@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 
+from elevenlabs import VoiceSettings
 from elevenlabs.client import AsyncElevenLabs
 
 from providers.base import AbstractTTSProvider
@@ -32,16 +33,16 @@ class ElevenLabsProvider(AbstractTTSProvider):
         style = float(kwargs.get("style", default_style))
         use_speaker_boost = bool(kwargs.get("use_speaker_boost", default_boost))
 
-        audio_stream = await self._client.generate(
+        audio_stream = self._client.text_to_speech.convert(
+            voice,
             text=text,
-            voice=voice,
-            voice_settings={
-                "stability": stability,
-                "similarity_boost": similarity_boost,
-                "style": style,
-                "use_speaker_boost": use_speaker_boost,
-            },
-            model="eleven_multilingual_v2",
+            voice_settings=VoiceSettings(
+                stability=stability,
+                similarity_boost=similarity_boost,
+                style=style,
+                use_speaker_boost=use_speaker_boost,
+            ),
+            model_id="eleven_multilingual_v2",
             output_format="mp3_44100_128",
         )
 
