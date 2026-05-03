@@ -70,7 +70,40 @@ class Job:
         await self.events.put(event)
 
 
-jobs: dict[str, Job] = {}
+# ==================== 新增 / 重構部分 ====================
+jobs: dict[str, Job] = {}   # 記憶體快取（重啟後自動從 DB 補齊）
+
+
+def get_job(job_id: str) -> "Job | None":
+    """取得 Job，記憶體 miss 時自動從 DB 載入並快取"""
+    if job_id in jobs:
+        return jobs[job_id]
+
+    job = load_job_from_db(job_id)
+    if job:
+        job.events = asyncio.Queue()          # 每次載入都重建 queue（無法持久化）
+        jobs[job_id] = job
+    return job
+
+
+def create_job(
+    job_id: str,
+    status: JobStatus = "queued",
+    progress: int = 0,
+    message: str = "Queued",
+    **kwargs: Any,
+) -> Job:
+    """統一建立新 Job 並立即持久化"""
+    job = Job(
+        id=job_id,
+        status=status,
+        progress=progress,
+        message=message,
+        **kwargs,
+    )
+    jobs[job_id] = job
+    _persist(job)          # 初始狀態寫入 DB
+    return job
 
 
 def prune_jobs(
@@ -79,21 +112,32 @@ def prune_jobs(
     now: datetime | None = None,
     remove_files: bool = True,
 ) -> list[str]:
-    """Remove stale in-memory jobs and their generated output files."""
+    """同時清理記憶體 + DB 中的過期任務"""
     current_time = now or datetime.now(timezone.utc)
     cutoff = current_time - timedelta(seconds=ttl_seconds)
+
+    # 1. 清理記憶體
     stale_ids = [
         job_id
-        for job_id, job in jobs.items()
+        for job_id, job in list(jobs.items())
         if job.updated_at < cutoff or (job.status in {"done", "failed"} and job.created_at < cutoff)
     ]
 
     for job_id in stale_ids:
-        job = jobs.pop(job_id)
-        if remove_files and job.output_path:
+        job = jobs.pop(job_id, None)
+        if remove_files and job and job.output_path:
             try:
                 job.output_path.unlink(missing_ok=True)
             except OSError:
                 pass
+
+    # 2. 清理 DB
+    from backend.models.database import JobRecord, SessionLocal
+    with SessionLocal() as session:
+        session.query(JobRecord).filter(
+            (JobRecord.updated_at < cutoff) |
+            ((JobRecord.status.in_(["done", "failed"])) & (JobRecord.created_at < cutoff))
+        ).delete()
+        session.commit()
 
     return stale_ids

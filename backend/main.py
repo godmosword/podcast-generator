@@ -1,15 +1,24 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import VOICE_CATALOG
+from backend.jobs import prune_jobs
 from backend.routers import analyze, bgm, classics, files, generate, preview, script
 from config import Config
 
-app = FastAPI(title="Wavescript API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    prune_jobs()
+    yield
+
+
+app = FastAPI(title="Wavescript API", version="0.1.0", lifespan=lifespan)
 config = Config()
 
 app.add_middleware(

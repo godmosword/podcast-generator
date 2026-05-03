@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from backend.jobs import Job, jobs, load_job_from_db, prune_jobs
+from backend.jobs import Job, create_job, get_job, jobs, prune_jobs
 from backend.models.schemas import GenerateRequest, GenerateResponse, JobSnapshot
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track
 from backend.config import voice_provider
@@ -48,8 +48,7 @@ async def generate(request: Request, payload: GenerateRequest, background_tasks:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     job_id = uuid4().hex
-    job = Job(id=job_id)
-    jobs[job_id] = job
+    job = create_job(job_id)
     await job.publish("queued", 0, "Queued.")
     background_tasks.add_task(_run_job, job_id, payload)
     return GenerateResponse(job_id=job_id, events_url=f"/api/generate/{job_id}/events", file_url=None)
@@ -80,7 +79,7 @@ async def stream_events(job_id: str) -> StreamingResponse:
 
 
 async def _run_job(job_id: str, request: GenerateRequest) -> None:
-    job = jobs[job_id]
+    job = get_job(job_id)
     output_format = request.audio.output_format
     output_path = Path("output") / f"{job_id}.{output_format}"
     config = Config()
@@ -137,7 +136,7 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
 
 
 def _job_or_404(job_id: str) -> Job:
-    job = jobs.get(job_id) or load_job_from_db(job_id)
+    job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
     return job
