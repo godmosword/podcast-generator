@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import os
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from datetime import datetime, timedelta, timezone
@@ -15,14 +16,16 @@ from pydub.generators import Sine
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track, list_bgm_tracks
 from backend.config import VOICE_CATALOG, voice_provider
 from backend.jobs import Job, jobs
-from backend.main import app
+from backend.main import _elevenlabs_voice_catalog, app, config as app_config
 from backend.security import get_client_ip, rate_limiter
 from backend.routers.generate import GENERIC_GENERATE_ERROR, _run_job
+from backend.voice_catalog import get_voice, provider_voice_id, tts_options_for
 from config import Config, Provider, voice_pitch
 from core.audio_processor import mix_bgm
 from core.role_mapper import RoleMappingError, map_roles_to_voices
 from core.script_generator import ScriptSpec, _validate_and_clean
 from core.script_parser import parse_script_details
+from providers.edge_tts import EdgeTTSProvider
 from utils.script_metrics import measure_script
 
 
@@ -66,6 +69,23 @@ class TTSConfigTests(unittest.TestCase):
         self.assertEqual({voice["language"] for voice in edge_voices}, {"zh-TW", "en-US", "en-GB", "ja-JP"})
         self.assertEqual({key: len(value) for key, value in groups.items()}, {"zh-TW": 8, "English": 8, "ja-JP": 8})
 
+    def test_voice_catalog_items_have_required_metadata(self) -> None:
+        for voice in VOICE_CATALOG:
+            self.assertTrue(voice["id"])
+            self.assertIn(voice["provider"], {item.value for item in Provider})
+            self.assertTrue(voice["provider_voice_id"])
+            self.assertIsInstance(voice["tags"], list)
+            self.assertEqual(voice["source"], "static")
+
+    def test_voice_catalog_resolves_canonical_and_legacy_ids(self) -> None:
+        canonical = get_voice("edge:zh-TW-HsiaoChenNeural")
+        legacy = get_voice("zh-TW-HsiaoChenNeural")
+
+        self.assertIsNotNone(canonical)
+        self.assertEqual(canonical, legacy)
+        self.assertEqual(provider_voice_id("edge:zh-TW-YunJheNeural__boy-1"), "zh-TW-YunJheNeural")
+        self.assertEqual(tts_options_for("edge:zh-TW-YunJheNeural__boy-1")["pitch"], "+85Hz")
+
     def test_child_voice_pitch_profiles(self) -> None:
         self.assertEqual(voice_pitch("zh-TW-YunJheNeural__boy-1"), "+85Hz")
         self.assertEqual(voice_pitch("zh-TW-HsiaoYuNeural__girl-2"), "+100Hz")
@@ -73,10 +93,26 @@ class TTSConfigTests(unittest.TestCase):
         self.assertEqual(voice_pitch("zh-TW-HsiaoChenNeural"), "+0Hz")
 
     def test_voice_provider_detects_paid_provider_voices(self) -> None:
+        self.assertEqual(voice_provider("openai:nova"), Provider.OPENAI)
         self.assertEqual(voice_provider("nova"), Provider.OPENAI)
         self.assertEqual(voice_provider("Rachel"), Provider.ELEVENLABS)
         self.assertEqual(voice_provider("elevenlabs:custom-voice-id"), Provider.ELEVENLABS)
+        self.assertEqual(voice_provider("edge:zh-TW-HsiaoChenNeural"), Provider.EDGE)
         self.assertEqual(voice_provider("zh-TW-HsiaoChenNeural"), Provider.EDGE)
+
+    def test_edge_provider_uses_catalog_provider_voice_id(self) -> None:
+        async def fake_synthesize(text: str, voice_id: str, rate: str, pitch: str) -> bytes:
+            self.assertEqual(voice_id, "zh-TW-YunJheNeural")
+            self.assertEqual(pitch, "+85Hz")
+            return b"audio"
+
+        config = Config()
+        options = config.tts_options_for("edge:zh-TW-YunJheNeural__boy-1")
+
+        with patch("providers.edge_tts._synthesize_one", new=fake_synthesize):
+            audio = asyncio.run(EdgeTTSProvider().synthesize("哈囉", "edge:zh-TW-YunJheNeural__boy-1", **options))
+
+        self.assertEqual(audio, b"audio")
 
     def test_production_cors_rejects_wildcard_or_empty_origins(self) -> None:
         with patch.dict(os.environ, {"APP_ENV": "production", "CORS_ORIGINS": "*"}):
@@ -174,6 +210,38 @@ class ApiValidationTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
+
+    def test_voices_endpoint_returns_catalog_metadata(self) -> None:
+        client = TestClient(app)
+        response = client.get("/api/voices")
+
+        self.assertEqual(response.status_code, 200)
+        voices = response.json()
+        self.assertTrue(any(voice["id"] == "edge:zh-TW-HsiaoChenNeural" for voice in voices))
+        first = voices[0]
+        self.assertIn("provider_voice_id", first)
+        self.assertIn("tags", first)
+        self.assertEqual(first["source"], "static")
+
+    def test_elevenlabs_dynamic_voices_are_appended_and_deduped(self) -> None:
+        voice_response = SimpleNamespace(
+            voices=[
+                SimpleNamespace(voice_id="custom-voice", name="Custom Host", labels={"gender": "female"}),
+                SimpleNamespace(voice_id="Rachel", name="Rachel", labels={}),
+            ]
+        )
+        client = Mock()
+        client.voices.get_all = AsyncMock(return_value=voice_response)
+
+        with (
+            patch.object(app_config, "elevenlabs_api_key", "test-key"),
+            patch("elevenlabs.client.AsyncElevenLabs", return_value=client),
+        ):
+            voices = asyncio.run(_elevenlabs_voice_catalog())
+
+        self.assertEqual([voice["id"] for voice in voices], ["elevenlabs:custom-voice"])
+        self.assertEqual(voices[0]["provider_voice_id"], "custom-voice")
+        self.assertEqual(voices[0]["source"], "dynamic")
 
     def test_preview_rejects_unknown_voice_id(self) -> None:
         client = TestClient(app)

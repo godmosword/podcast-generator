@@ -4,18 +4,15 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from backend.config import VOICE_CATALOG
+from backend.voice_catalog import is_known_voice
 
 
 OutputFormat = Literal["mp3", "wav"]
 JobStatus = Literal["queued", "parsing", "synthesizing", "mixing", "exporting", "done", "failed"]
-VALID_VOICE_IDS = {voice["id"] for voice in VOICE_CATALOG}
-
-
 def validate_voice_id(value: str) -> str:
     if value.startswith("elevenlabs:") and len(value) > len("elevenlabs:"):
         return value
-    if value not in VALID_VOICE_IDS:
+    if not is_known_voice(value):
         raise ValueError(f"Unknown voice: {value}")
     return value
 

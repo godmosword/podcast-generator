@@ -44,8 +44,11 @@ export type VoiceCatalogItem = {
   id: string;
   label: string;
   provider: "edge" | "openai" | "elevenlabs";
+  provider_voice_id?: string;
   language: string;
   tone: string;
+  tags?: string[];
+  source?: "static" | "dynamic";
 };
 
 export type GenerateResponse = {

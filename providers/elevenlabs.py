@@ -5,6 +5,7 @@ import io
 from elevenlabs import VoiceSettings
 from elevenlabs.client import AsyncElevenLabs
 
+from backend.voice_catalog import provider_voice_id
 from providers.base import AbstractTTSProvider
 
 
@@ -15,7 +16,7 @@ class ElevenLabsProvider(AbstractTTSProvider):
         self._client = AsyncElevenLabs(api_key=api_key)
 
     async def synthesize(self, text: str, voice: str, **kwargs) -> bytes:
-        voice_id = voice.removeprefix("elevenlabs:")
+        voice_id = str(kwargs.get("provider_voice_id") or provider_voice_id(voice))
         voice_mode = str(kwargs.get("voice_mode", "conversational"))
 
         if voice_mode == "conversational":

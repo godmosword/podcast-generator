@@ -4,6 +4,7 @@ import io
 
 from openai import AsyncOpenAI
 
+from backend.voice_catalog import provider_voice_id
 from providers.base import AbstractTTSProvider
 
 
@@ -18,10 +19,11 @@ class OpenAITTSProvider(AbstractTTSProvider):
         options = {}
         if "speed" in kwargs:
             options["speed"] = kwargs["speed"]
+        voice_id = str(kwargs.get("provider_voice_id") or provider_voice_id(voice))
 
         response = await self._client.audio.speech.create(
             model=self._model,
-            voice=voice,
+            voice=voice_id,
             input=text,
             response_format="mp3",
             **options,

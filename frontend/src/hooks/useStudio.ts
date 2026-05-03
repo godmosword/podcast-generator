@@ -34,50 +34,27 @@ export type VoiceOption = {
   id: VoiceId;
   label: string;
   provider: VoiceCatalogItem["provider"];
+  provider_voice_id?: string;
   language: string;
   langLabel: string;
   tone: string;
+  tags: string[];
+  source: "static" | "dynamic";
 };
 
 const fallbackVoices: VoiceOption[] = [
-  { id: "zh-TW-YunJheNeural", label: "建宏", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人男聲" },
-  { id: "zh-TW-YunJheNeural__adult-male-2", label: "柏宇", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人男聲低沉" },
-  { id: "zh-TW-HsiaoChenNeural", label: "雅琪", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人女聲" },
-  { id: "zh-TW-HsiaoYuNeural", label: "靜怡", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "成人女聲柔和" },
-  { id: "zh-TW-YunJheNeural__boy-1", label: "小宇", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "5歲小男孩" },
-  { id: "zh-TW-YunJheNeural__boy-2", label: "小傑", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "5歲小男孩明亮" },
-  { id: "zh-TW-HsiaoChenNeural__girl-1", label: "小安", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "5歲小女孩" },
-  { id: "zh-TW-HsiaoYuNeural__girl-2", label: "小晴", provider: "edge", language: "zh-TW", langLabel: "繁體中文", tone: "5歲小女孩柔和" },
-  { id: "en-US-AndrewNeural", label: "Andrew", provider: "edge", language: "en-US", langLabel: "English", tone: "adult male" },
-  { id: "en-US-BrianNeural", label: "Brian", provider: "edge", language: "en-US", langLabel: "English", tone: "adult male casual" },
-  { id: "en-US-AvaNeural", label: "Ava", provider: "edge", language: "en-US", langLabel: "English", tone: "adult female" },
-  { id: "en-US-EmmaNeural", label: "Emma", provider: "edge", language: "en-US", langLabel: "English", tone: "adult female conversational" },
-  { id: "en-US-RogerNeural__boy-1", label: "Oliver", provider: "edge", language: "en-US", langLabel: "English", tone: "5-year-old boy" },
-  { id: "en-US-AndrewNeural__boy-2", label: "Leo", provider: "edge", language: "en-US", langLabel: "English", tone: "bright 5-year-old boy" },
-  { id: "en-US-AnaNeural", label: "Ana", provider: "edge", language: "en-US", langLabel: "English", tone: "5-year-old girl" },
-  { id: "en-GB-MaisieNeural__girl-2", label: "Maisie", provider: "edge", language: "en-GB", langLabel: "English", tone: "bright 5-year-old girl" },
-  { id: "ja-JP-KeitaNeural", label: "啓太", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "成人男性" },
-  { id: "ja-JP-KeitaNeural__adult-male-2", label: "悠真", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "成人男性低め" },
-  { id: "ja-JP-NanamiNeural", label: "七海", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "成人女性" },
-  { id: "ja-JP-NanamiNeural__adult-female-2", label: "葵", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "成人女性明るめ" },
-  { id: "ja-JP-KeitaNeural__boy-1", label: "湊", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "5歳男の子" },
-  { id: "ja-JP-KeitaNeural__boy-2", label: "陽翔", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "明るい5歳男の子" },
-  { id: "ja-JP-NanamiNeural__girl-1", label: "結菜", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "5歳女の子" },
-  { id: "ja-JP-NanamiNeural__girl-2", label: "陽菜", provider: "edge", language: "ja-JP", langLabel: "日本語", tone: "明るい5歳女の子" },
-  { id: "elevenlabs:Rachel", label: "Rachel", provider: "elevenlabs", language: "multi", langLabel: "ElevenLabs", tone: "adult female" },
-  { id: "elevenlabs:Adam", label: "Adam", provider: "elevenlabs", language: "multi", langLabel: "ElevenLabs", tone: "adult male" },
-  { id: "alloy", label: "Alloy", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "balanced" },
-  { id: "nova", label: "Nova", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "warm" },
-  { id: "echo", label: "Echo", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "clear" },
-  { id: "fable", label: "Fable", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "storytelling" },
-  { id: "onyx", label: "Onyx", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "deep" },
-  { id: "shimmer", label: "Shimmer", provider: "openai", language: "multi", langLabel: "OpenAI", tone: "bright" },
+  { id: "edge:zh-TW-HsiaoChenNeural", label: "雅琪", provider: "edge", provider_voice_id: "zh-TW-HsiaoChenNeural", language: "zh-TW", langLabel: "繁體中文", tone: "成人女聲", tags: ["female", "warm", "host"], source: "static" },
+  { id: "edge:zh-TW-YunJheNeural", label: "建宏", provider: "edge", provider_voice_id: "zh-TW-YunJheNeural", language: "zh-TW", langLabel: "繁體中文", tone: "成人男聲", tags: ["male", "clear", "host"], source: "static" },
+  { id: "edge:zh-TW-HsiaoYuNeural", label: "靜怡", provider: "edge", provider_voice_id: "zh-TW-HsiaoYuNeural", language: "zh-TW", langLabel: "繁體中文", tone: "成人女聲柔和", tags: ["female", "soft", "storytelling"], source: "static" },
+  { id: "edge:zh-TW-YunJheNeural__adult-male-2", label: "柏宇", provider: "edge", provider_voice_id: "zh-TW-YunJheNeural", language: "zh-TW", langLabel: "繁體中文", tone: "成人男聲低沉", tags: ["male", "low", "guest"], source: "static" },
 ];
 
 function toVoiceOption(item: VoiceCatalogItem): VoiceOption {
   return {
     ...item,
     langLabel: languageLabel(item),
+    tags: item.tags ?? [],
+    source: item.source ?? "static",
   };
 }
 
@@ -118,10 +95,10 @@ const defaultScript = `[主持人A]: 大家好，歡迎收聽 Wavescript。
 [主持人A]: 我們會從文稿、聲線到輸出流程一路拆解。`;
 
 const defaultSlots: VoiceSlot[] = [
-  { id: 1, role: "主持人A", voice: "zh-TW-HsiaoChenNeural", sampleState: "idle" },
-  { id: 2, role: "主持人B", voice: "zh-TW-YunJheNeural", sampleState: "idle" },
-  { id: 3, role: "主持人C", voice: "zh-TW-HsiaoYuNeural", sampleState: "idle" },
-  { id: 4, role: "主持人D", voice: "zh-TW-YunJheNeural__adult-male-2", sampleState: "idle" },
+  { id: 1, role: "主持人A", voice: "edge:zh-TW-HsiaoChenNeural", sampleState: "idle" },
+  { id: 2, role: "主持人B", voice: "edge:zh-TW-YunJheNeural", sampleState: "idle" },
+  { id: 3, role: "主持人C", voice: "edge:zh-TW-HsiaoYuNeural", sampleState: "idle" },
+  { id: 4, role: "主持人D", voice: "edge:zh-TW-YunJheNeural__adult-male-2", sampleState: "idle" },
 ];
 
 export function useStudio() {

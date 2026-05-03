@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,11 +35,11 @@ async def health() -> dict[str, str]:
 
 
 @app.get("/api/voices")
-async def voices() -> list[dict[str, str]]:
+async def voices() -> list[dict[str, Any]]:
     return VOICE_CATALOG + await _elevenlabs_voice_catalog()
 
 
-async def _elevenlabs_voice_catalog() -> list[dict[str, str]]:
+async def _elevenlabs_voice_catalog() -> list[dict[str, Any]]:
     if not config.elevenlabs_api_key:
         return []
     try:
@@ -48,7 +50,7 @@ async def _elevenlabs_voice_catalog() -> list[dict[str, str]]:
     except Exception:
         return []
 
-    items: list[dict[str, str]] = []
+    items: list[dict[str, Any]] = []
     for voice in getattr(response, "voices", []) or []:
         voice_id = getattr(voice, "voice_id", "")
         name = getattr(voice, "name", voice_id)
@@ -62,8 +64,11 @@ async def _elevenlabs_voice_catalog() -> list[dict[str, str]]:
                 "id": f"elevenlabs:{voice_id}",
                 "label": str(name),
                 "provider": "elevenlabs",
+                "provider_voice_id": str(voice_id),
                 "language": language,
                 "tone": tone,
+                "tags": ["elevenlabs", "dynamic"],
+                "source": "dynamic",
             }
         )
     static_ids = {item["id"] for item in VOICE_CATALOG}

@@ -6,7 +6,7 @@ import re
 import edge_tts
 from pydub import AudioSegment
 
-from config import base_voice_id
+from backend.voice_catalog import provider_voice_id
 from providers.base import AbstractTTSProvider
 
 # Pause durations injected between synthesized clauses (ms)
@@ -31,7 +31,7 @@ class EdgeTTSProvider(AbstractTTSProvider):
         pitch = str(kwargs.get("pitch", "+0Hz"))
         pause_scale = float(kwargs.get("pause_scale", 1.0))
 
-        voice_id = base_voice_id(voice)
+        voice_id = str(kwargs.get("provider_voice_id") or provider_voice_id(voice))
         clauses = _split_clauses(text)
 
         if len(clauses) <= 1:

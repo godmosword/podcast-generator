@@ -8,6 +8,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from backend.voice_catalog import provider_voice_id, tts_options_for
+
 load_dotenv()
 
 
@@ -18,34 +20,34 @@ class Provider(str, Enum):
 
 
 DEFAULT_VOICE_MAP: dict[str, str] = {
-    "主持人": "zh-TW-HsiaoChenNeural",
-    "主持人A": "zh-TW-HsiaoChenNeural",
-    "主持人B": "zh-TW-YunJheNeural",
-    "主持人C": "zh-TW-HsiaoYuNeural",
-    "主持人D": "zh-TW-YunJheNeural__adult-male-2",
-    "來賓": "zh-TW-YunJheNeural",
-    "narrator": "zh-TW-HsiaoChenNeural",
-    "speaker_1": "zh-TW-HsiaoChenNeural",
-    "_default": "zh-TW-HsiaoChenNeural",
+    "主持人": "edge:zh-TW-HsiaoChenNeural",
+    "主持人A": "edge:zh-TW-HsiaoChenNeural",
+    "主持人B": "edge:zh-TW-YunJheNeural",
+    "主持人C": "edge:zh-TW-HsiaoYuNeural",
+    "主持人D": "edge:zh-TW-YunJheNeural__adult-male-2",
+    "來賓": "edge:zh-TW-YunJheNeural",
+    "narrator": "edge:zh-TW-HsiaoChenNeural",
+    "speaker_1": "edge:zh-TW-HsiaoChenNeural",
+    "_default": "edge:zh-TW-HsiaoChenNeural",
 }
 
 OPENAI_VOICE_MAP: dict[str, str] = {
-    "主持人": "nova",
-    "主持人A": "nova",
-    "主持人B": "echo",
-    "主持人C": "alloy",
-    "主持人D": "fable",
-    "來賓": "echo",
-    "narrator": "alloy",
-    "speaker_1": "nova",
-    "_default": "alloy",
+    "主持人": "openai:nova",
+    "主持人A": "openai:nova",
+    "主持人B": "openai:echo",
+    "主持人C": "openai:alloy",
+    "主持人D": "openai:fable",
+    "來賓": "openai:echo",
+    "narrator": "openai:alloy",
+    "speaker_1": "openai:nova",
+    "_default": "openai:alloy",
 }
 
 ELEVENLABS_VOICE_MAP: dict[str, str] = {
-    "主持人": "Rachel",
-    "來賓": "Adam",
-    "narrator": "Rachel",
-    "_default": "Rachel",
+    "主持人": "elevenlabs:Rachel",
+    "來賓": "elevenlabs:Adam",
+    "narrator": "elevenlabs:Rachel",
+    "_default": "elevenlabs:Rachel",
 }
 
 
@@ -123,18 +125,22 @@ class Config:
         return mapping.get(speaker, mapping["_default"])
 
     def tts_options_for(self, voice: str) -> dict[str, float | str]:
+        catalog_options = tts_options_for(voice)
         if self.provider == Provider.OPENAI:
-            return {"speed": self.speech_speed}
+            return {**catalog_options, "speed": self.speech_speed, "provider_voice_id": provider_voice_id(voice)}
         if self.provider == Provider.ELEVENLABS:
-            return {"voice_mode": self.voice_mode}
-        return {"speed": self.speech_speed, "pitch": voice_pitch(voice)}
+            return {"voice_mode": self.voice_mode, **catalog_options, "provider_voice_id": provider_voice_id(voice)}
+        return {**catalog_options, "speed": self.speech_speed, "pitch": voice_pitch(voice), "provider_voice_id": provider_voice_id(voice)}
 
 
 def base_voice_id(voice: str) -> str:
-    return voice.split("__", 1)[0]
+    return provider_voice_id(voice).split("__", 1)[0]
 
 
 def voice_pitch(voice: str) -> str:
+    options = tts_options_for(voice)
+    if "pitch" in options:
+        return str(options["pitch"])
     profile = voice.split("__", 1)[1] if "__" in voice else ""
     profile_pitch = {
         "adult-male-2": "-2Hz",
