@@ -30,6 +30,8 @@ class Project(Base):
     bgm_id = Column(String, nullable=True)
     speaker_settings = Column(JSON, nullable=True)
     last_generated_job_id = Column(String, nullable=True)
+    chapters = Column(JSON, nullable=True)
+    show_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
 
@@ -51,6 +53,21 @@ class JobRecord(Base):
     updated_at = Column(DateTime, nullable=False)
 
 
+class Segment(Base):
+    __tablename__ = "segments"
+
+    id = Column(String, primary_key=True)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=True)
+    index = Column(Integer, nullable=False)
+    speaker = Column(String, nullable=False)
+    text = Column(Text, nullable=False)
+    start_ms = Column(Integer, nullable=False, default=0)
+    end_ms = Column(Integer, nullable=False, default=0)
+    audio_path = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
 Base.metadata.create_all(bind=engine)
 
 # Migrate existing databases that predate new columns.
@@ -64,5 +81,16 @@ with engine.connect() as _conn:
     _existing = {col["name"] for col in inspect(engine).get_columns("jobs")}
     for _col, _ddl in _NEW_JOB_COLUMNS:
         if _col not in _existing:
+            _conn.execute(text(_ddl))
+    _conn.commit()
+
+_NEW_PROJECT_COLUMNS = [
+    ("chapters", "ALTER TABLE projects ADD COLUMN chapters JSON"),
+    ("show_notes", "ALTER TABLE projects ADD COLUMN show_notes TEXT"),
+]
+with engine.connect() as _conn:
+    _existing_proj = {col["name"] for col in inspect(engine).get_columns("projects")}
+    for _col, _ddl in _NEW_PROJECT_COLUMNS:
+        if _col not in _existing_proj:
             _conn.execute(text(_ddl))
     _conn.commit()

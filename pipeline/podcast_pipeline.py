@@ -7,7 +7,15 @@ from typing import Awaitable, Callable
 from pydub import AudioSegment
 
 from config import Config, Provider
-from core.audio_processor import apply_per_speaker_settings, fade_edges, limit_peaks, merge_segments, mix_bgm, normalize_volume
+from core.audio_processor import (
+    apply_per_speaker_settings,
+    fade_edges,
+    limit_peaks,
+    merge_segments,
+    mix_bgm,
+    normalize_volume,
+    post_process_audio,
+)
 from core.exporter import export_audio
 from core.role_mapper import map_roles_to_voices
 from core.script_parser import parse_script_details
@@ -58,6 +66,9 @@ class PodcastPipeline:
         bgm_volume_db: float | None = None,
         bgm_fade_ms: int = 1500,
         speaker_settings: dict | None = None,
+        post_process: bool = False,
+        project_id: str | None = None,
+        job_id: str | None = None,
         progress: ProgressCallback | None = None,
     ) -> str:
         raw = read_text(script_path)
@@ -73,6 +84,9 @@ class PodcastPipeline:
             bgm_volume_db=bgm_volume_db,
             bgm_fade_ms=bgm_fade_ms,
             speaker_settings=speaker_settings,
+            post_process=post_process,
+            project_id=project_id,
+            job_id=job_id,
             progress=progress,
         )
 
@@ -89,6 +103,9 @@ class PodcastPipeline:
         bgm_volume_db: float | None = None,
         bgm_fade_ms: int = 1500,
         speaker_settings: dict | None = None,
+        post_process: bool = False,
+        project_id: str | None = None,
+        job_id: str | None = None,
         progress: ProgressCallback | None = None,
     ) -> str:
         config = self._config
@@ -105,6 +122,8 @@ class PodcastPipeline:
 
         combined = AudioSegment.empty()
         speech_segments = [segment for segment in segments if not segment.is_silence]
+        segment_records: list[dict] = []
+        seg_dir = Path("output/segments") / (job_id or "tmp") if project_id else None
 
         for i, segment in enumerate(segments):
             if segment.is_silence:
@@ -132,7 +151,28 @@ class PodcastPipeline:
             if speaker_settings:
                 segment_audio = apply_per_speaker_settings(segment_audio, segment.speaker, speaker_settings)
 
+            start_ms = len(combined)
             combined = combined + segment_audio
+            end_ms = len(combined)
+
+            audio_path: str | None = None
+            if seg_dir is not None:
+                try:
+                    seg_dir.mkdir(parents=True, exist_ok=True)
+                    seg_file = seg_dir / f"{segment.index}.mp3"
+                    segment_audio.export(str(seg_file), format="mp3", bitrate="128k")
+                    audio_path = str(seg_file)
+                except Exception:
+                    logger.debug("Failed to save segment audio for index %s.", segment.index)
+
+            segment_records.append({
+                "index": segment.index,
+                "speaker": segment.speaker,
+                "text": segment.text,
+                "start_ms": start_ms,
+                "end_ms": end_ms,
+                "audio_path": audio_path,
+            })
 
             if segment.pause_after_ms:
                 combined = combined + AudioSegment.silent(duration=segment.pause_after_ms)
@@ -141,6 +181,11 @@ class PodcastPipeline:
         if normalize:
             combined = normalize_volume(combined, target_lufs=config.target_lufs)
         combined = limit_peaks(combined)
+
+        if post_process:
+            logger.info("Applying post-processing (silence trim + voice enhancement).")
+            combined = post_process_audio(combined)
+
         combined = fade_edges(combined)
 
         effective_bgm_path = bgm_path or config.bgm_path
@@ -159,6 +204,29 @@ class PodcastPipeline:
         await _emit(progress, "exporting", 92, f"Exporting {output_format.upper()}.")
         result = export_audio(combined, output_path, metadata=metadata, output_format=output_format)
         logger.info("Exported podcast audio to %s.", result)
+
+        if project_id and job_id and segment_records:
+            try:
+                from backend.segments import upsert_segments
+                upsert_segments(project_id, job_id, segment_records)
+            except Exception:
+                logger.warning("Failed to save segments for project %s.", project_id)
+
+        if project_id and config.gemini_api_key and segment_records:
+            try:
+                from backend.utils.ai_helper import generate_show_notes
+                from backend.projects import update_project
+                chapters, show_notes = await generate_show_notes(
+                    script,
+                    segment_records,
+                    config.gemini_api_key,
+                    config.gemini_model,
+                )
+                if chapters or show_notes:
+                    update_project(project_id, chapters=chapters, show_notes=show_notes)
+            except Exception:
+                logger.warning("Failed to generate show notes for project %s.", project_id)
+
         await _emit(progress, "done", 100, "Export complete.")
         return result
 

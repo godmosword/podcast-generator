@@ -21,6 +21,8 @@ def _to_dict(project: Project) -> dict[str, Any]:
         "bgm_id": project.bgm_id,
         "speaker_settings": project.speaker_settings or {},
         "last_generated_job_id": project.last_generated_job_id,
+        "chapters": project.chapters or [],
+        "show_notes": project.show_notes or "",
         "created_at": project.created_at.isoformat() if project.created_at else None,
         "updated_at": project.updated_at.isoformat() if project.updated_at else None,
     }
@@ -62,7 +64,7 @@ def get_project(project_id: str) -> dict[str, Any] | None:
 
 
 def update_project(project_id: str, **kwargs: Any) -> dict[str, Any] | None:
-    _ALLOWED = {"title", "script", "hosts", "voice_map", "bgm_id", "speaker_settings", "last_generated_job_id"}
+    _ALLOWED = {"title", "script", "hosts", "voice_map", "bgm_id", "speaker_settings", "last_generated_job_id", "chapters", "show_notes"}
     with SessionLocal() as db:
         project = db.get(Project, project_id)
         if project is None:

@@ -206,6 +206,9 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
                 bgm_volume_db=request.audio.bgm_volume_db,
                 bgm_fade_ms=request.audio.bgm_fade_ms,
                 speaker_settings=speaker_settings or None,
+                post_process=request.audio.post_process,
+                project_id=request.project_id,
+                job_id=job_id,
                 progress=publish,
             )
             job.output_path = Path(result)

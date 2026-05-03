@@ -43,6 +43,7 @@ class AudioSettings(BaseModel):
     normalize: bool = True
     voice_mode: Literal["conversational", "narration"] = "conversational"
     voice_quality: Literal["standard", "high"] = "standard"
+    post_process: bool = False
 
 
 class GenerateRequest(BaseModel):
@@ -112,6 +113,8 @@ class ProjectResponse(BaseModel):
     bgm_id: str | None
     speaker_settings: dict[str, dict[str, Any]]
     last_generated_job_id: str | None
+    chapters: list[dict[str, Any]]
+    show_notes: str
     created_at: str | None
     updated_at: str | None
 
@@ -121,3 +124,22 @@ class ProjectSummary(BaseModel):
     title: str
     last_generated_job_id: str | None
     updated_at: str | None
+
+
+class SegmentResponse(BaseModel):
+    id: str
+    project_id: str
+    job_id: str | None
+    index: int
+    speaker: str
+    text: str
+    start_ms: int
+    end_ms: int
+    audio_url: str | None
+    created_at: str | None
+
+
+class SegmentRegenerateResponse(BaseModel):
+    segment_id: str
+    audio_url: str
+    duration_ms: int

@@ -104,6 +104,27 @@ def fade_edges(
     return audio.fade_in(fade_in_ms).fade_out(fade_out_ms)
 
 
+def post_process_audio(
+    audio: AudioSegment,
+    *,
+    trim_silence: bool = True,
+    enhance_voice: bool = True,
+) -> AudioSegment:
+    """Trim edge silence and apply a gentle HPF for voice clarity."""
+    if trim_silence:
+        try:
+            audio = audio.strip_silence(silence_len=300, silence_thresh=-45, padding=150)
+        except Exception:
+            logger.debug("strip_silence unavailable; skipping silence trim.")
+    if enhance_voice:
+        try:
+            from pydub.scipy_effects import high_pass_filter
+            audio = high_pass_filter(audio, 80)
+        except Exception:
+            logger.debug("scipy_effects unavailable; skipping voice enhancement.")
+    return audio
+
+
 def mix_bgm(
     speech: AudioSegment,
     bgm_path: str,
