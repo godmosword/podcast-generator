@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from backend.jobs import Job, jobs, prune_jobs
+from backend.jobs import Job, jobs, load_job_from_db, prune_jobs
 from backend.models.schemas import GenerateRequest, GenerateResponse, JobSnapshot
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track
 from backend.config import voice_provider
@@ -137,7 +137,7 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
 
 
 def _job_or_404(job_id: str) -> Job:
-    job = jobs.get(job_id)
+    job = jobs.get(job_id) or load_job_from_db(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
     return job
