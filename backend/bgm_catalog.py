@@ -9,6 +9,7 @@ from pydub import AudioSegment
 
 SUPPORTED_BGM_EXTENSIONS = {".mp3", ".wav"}
 DEFAULT_BGM_DIR = Path("assets/bgm")
+USER_BGM_DIR = Path("output/user_bgm")
 
 
 class BgmNotFoundError(ValueError):
@@ -75,6 +76,24 @@ def list_bgm_tracks(bgm_dir: Path = DEFAULT_BGM_DIR) -> list[BgmTrack]:
                     path=resolved,
                 )
             )
+
+    # Append user-uploaded BGM tracks.
+    for path in sorted(USER_BGM_DIR.iterdir()) if USER_BGM_DIR.exists() else []:
+        if not _is_supported_audio(path):
+            continue
+        resolved = path.resolve()
+        if resolved in seen_paths:
+            continue
+        seen_paths.add(resolved)
+        tracks.append(
+            BgmTrack(
+                id=path.stem,
+                title=path.stem.replace("-", " ").replace("_", " ").title(),
+                mood="custom",
+                duration=_duration_seconds(path),
+                path=resolved,
+            )
+        )
 
     return tracks
 

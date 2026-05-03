@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import VOICE_CATALOG
 from backend.jobs import prune_jobs
-from backend.routers import analyze, bgm, classics, files, generate, preview, script
+from backend.routers import analyze, bgm, classics, files, generate, preview, projects, script
 from config import Config
 
 
@@ -36,6 +36,7 @@ app.include_router(bgm.router)
 app.include_router(classics.router)
 app.include_router(script.router)
 app.include_router(analyze.router)
+app.include_router(projects.router)
 
 
 @app.get("/api/health")

@@ -7,7 +7,7 @@ from typing import Awaitable, Callable
 from pydub import AudioSegment
 
 from config import Config, Provider
-from core.audio_processor import fade_edges, limit_peaks, merge_segments, mix_bgm, normalize_volume
+from core.audio_processor import apply_per_speaker_settings, fade_edges, limit_peaks, merge_segments, mix_bgm, normalize_volume
 from core.exporter import export_audio
 from core.role_mapper import map_roles_to_voices
 from core.script_parser import parse_script_details
@@ -57,6 +57,7 @@ class PodcastPipeline:
         bgm_path: str | None = None,
         bgm_volume_db: float | None = None,
         bgm_fade_ms: int = 1500,
+        speaker_settings: dict | None = None,
         progress: ProgressCallback | None = None,
     ) -> str:
         raw = read_text(script_path)
@@ -71,6 +72,7 @@ class PodcastPipeline:
             bgm_path=bgm_path,
             bgm_volume_db=bgm_volume_db,
             bgm_fade_ms=bgm_fade_ms,
+            speaker_settings=speaker_settings,
             progress=progress,
         )
 
@@ -86,6 +88,7 @@ class PodcastPipeline:
         bgm_path: str | None = None,
         bgm_volume_db: float | None = None,
         bgm_fade_ms: int = 1500,
+        speaker_settings: dict | None = None,
         progress: ProgressCallback | None = None,
     ) -> str:
         config = self._config
@@ -126,6 +129,8 @@ class PodcastPipeline:
             options = {**config.tts_options_for(voice), "pause_scale": style.pause_scale}
             audio_chunks = await self._engine.synthesize_chunks(chunks, voice, **options)
             segment_audio = merge_segments(audio_chunks, pause_ms=config.segment_pause_ms)
+            if speaker_settings:
+                segment_audio = apply_per_speaker_settings(segment_audio, segment.speaker, speaker_settings)
 
             combined = combined + segment_audio
 

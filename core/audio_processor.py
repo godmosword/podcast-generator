@@ -1,9 +1,42 @@
 from __future__ import annotations
 
 import io
+import logging
 
 from pydub import AudioSegment
 from pydub.effects import compress_dynamic_range
+
+logger = logging.getLogger(__name__)
+
+
+def apply_per_speaker_settings(
+    audio: AudioSegment,
+    speaker: str,
+    speaker_settings: dict,
+) -> AudioSegment:
+    """Apply per-speaker volume and EQ adjustments."""
+    settings = speaker_settings.get(speaker)
+    if not settings:
+        return audio
+
+    volume_db: float = settings.get("volume_db", 0.0) if isinstance(settings, dict) else getattr(settings, "volume_db", 0.0)
+    eq_preset: str = settings.get("eq_preset", "chat") if isinstance(settings, dict) else getattr(settings, "eq_preset", "chat")
+
+    if volume_db:
+        audio = audio.apply_gain(volume_db)
+
+    if eq_preset != "chat":
+        try:
+            from pydub.scipy_effects import high_pass_filter, low_pass_filter
+            if eq_preset == "news":
+                audio = high_pass_filter(audio, 200)
+                audio = low_pass_filter(audio, 8000)
+            elif eq_preset == "story":
+                audio = low_pass_filter(audio, 6000)
+        except Exception:
+            logger.debug("scipy_effects unavailable; skipping EQ for speaker %s.", speaker)
+
+    return audio
 
 
 def merge_segments(

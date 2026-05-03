@@ -13,6 +13,7 @@ from backend.jobs import Job, create_job, get_job, prune_jobs
 from backend.models.schemas import GenerateRequest, GenerateResponse, JobSnapshot
 from backend.bgm_catalog import BgmNotFoundError, get_bgm_track
 from backend.config import voice_provider
+from backend.projects import update_project
 from backend.security import enforce_rate_limit
 from config import Config, Provider
 from core.script_parser import parse_script_details
@@ -67,6 +68,8 @@ async def generate(request: Request, payload: GenerateRequest, background_tasks:
     job_id = uuid4().hex
     job = create_job(job_id, request_payload=payload.model_dump_json())
     await job.publish("queued", 0, "Queued.")
+    if payload.project_id:
+        update_project(payload.project_id, last_generated_job_id=job_id)
     background_tasks.add_task(_run_job, job_id, payload)
     return GenerateResponse(job_id=job_id, events_url=f"/api/generate/{job_id}/events", file_url=None)
 
@@ -185,6 +188,11 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
         async def publish(status: str, progress: int, message: str) -> None:
             await job.publish(status, progress, message)  # type: ignore[arg-type]
 
+        speaker_settings = {
+            role: s.model_dump()
+            for role, s in request.speaker_settings.items()
+        }
+
         try:
             result = await pipeline.run_text(
                 request.script,
@@ -197,6 +205,7 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
                 bgm_path=config.bgm_path,
                 bgm_volume_db=request.audio.bgm_volume_db,
                 bgm_fade_ms=request.audio.bgm_fade_ms,
+                speaker_settings=speaker_settings or None,
                 progress=publish,
             )
             job.output_path = Path(result)
