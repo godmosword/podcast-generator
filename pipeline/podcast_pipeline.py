@@ -15,6 +15,7 @@ from core.tts_engine import TTSEngine
 from core.voice_style import style_for
 from providers.base import AbstractTTSProvider
 from providers.edge_tts import EdgeTTSProvider
+from backend.utils.text_preprocessor import preprocess_for_tts
 from utils.file_utils import ensure_dir, read_text
 from utils.text_chunker import chunk_text
 
@@ -108,7 +109,7 @@ class PodcastPipeline:
                 continue
 
             voice = voice_map.get(segment.speaker, config.voice_for(segment.speaker))
-            chunks = chunk_text(segment.text, max_chars=config.chunk_size)
+            chunks = chunk_text(preprocess_for_tts(segment.text), max_chars=config.chunk_size)
             logger.info(
                 "Synthesizing segment %s/%s for speaker %s with %s chunk(s).",
                 i + 1,

@@ -1,5 +1,6 @@
 edge-tts>=6.1.9
 sqlalchemy>=2.0
+opencc-python-reimplemented>=0.1.7
 pydub>=0.25.1
 mutagen>=1.47.0
 typer>=0.12.0
