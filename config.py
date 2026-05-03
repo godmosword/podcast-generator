@@ -79,7 +79,7 @@ class Config:
     chunk_size: int = 4096
     segment_pause_ms: int = 500
     target_lufs: float = -16.0
-    speech_speed: float = 1.06
+    speech_speed: float = 1.12
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
@@ -139,9 +139,9 @@ def voice_pitch(voice: str) -> str:
     profile_pitch = {
         "adult-male-2": "-2Hz",
         "adult-female-2": "+1Hz",
-        "boy-1": "+22Hz",
-        "boy-2": "+26Hz",
-        "girl-1": "+28Hz",
-        "girl-2": "+32Hz",
+        "boy-1": "+85Hz",
+        "boy-2": "+100Hz",
+        "girl-1": "+90Hz",
+        "girl-2": "+100Hz",
     }
     return profile_pitch.get(profile, "+0Hz")
