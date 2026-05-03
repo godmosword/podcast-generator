@@ -25,6 +25,9 @@ def _persist(job: "Job") -> None:
         record.message = job.message
         record.output_path = str(job.output_path) if job.output_path else None
         record.error = job.error
+        record.retry_count = job.retry_count
+        record.last_provider = job.last_provider
+        record.request_payload = job.request_payload
         record.updated_at = job.updated_at
         session.commit()
 
@@ -43,6 +46,9 @@ def load_job_from_db(job_id: str) -> "Job | None":
             message=record.message or "",
             output_path=Path(record.output_path) if record.output_path else None,
             error=record.error,
+            retry_count=record.retry_count or 0,
+            last_provider=record.last_provider,
+            request_payload=record.request_payload,
             created_at=record.created_at.replace(tzinfo=timezone.utc),
             updated_at=record.updated_at.replace(tzinfo=timezone.utc),
         )
@@ -56,6 +62,9 @@ class Job:
     message: str = "Queued"
     output_path: Path | None = None
     error: str | None = None
+    retry_count: int = 0
+    last_provider: str | None = None
+    request_payload: str | None = None  # JSON-serialised GenerateRequest
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     events: asyncio.Queue[dict[str, Any]] = field(default_factory=asyncio.Queue)
@@ -70,18 +79,16 @@ class Job:
         await self.events.put(event)
 
 
-# ==================== 新增 / 重構部分 ====================
-jobs: dict[str, Job] = {}   # 記憶體快取（重啟後自動從 DB 補齊）
+jobs: dict[str, Job] = {}
 
 
 def get_job(job_id: str) -> "Job | None":
-    """取得 Job，記憶體 miss 時自動從 DB 載入並快取"""
+    """Return Job, loading from DB on cache miss."""
     if job_id in jobs:
         return jobs[job_id]
-
     job = load_job_from_db(job_id)
     if job:
-        job.events = asyncio.Queue()          # 每次載入都重建 queue（無法持久化）
+        job.events = asyncio.Queue()
         jobs[job_id] = job
     return job
 
@@ -93,16 +100,10 @@ def create_job(
     message: str = "Queued",
     **kwargs: Any,
 ) -> Job:
-    """統一建立新 Job 並立即持久化"""
-    job = Job(
-        id=job_id,
-        status=status,
-        progress=progress,
-        message=message,
-        **kwargs,
-    )
+    """Create a new Job and immediately persist it."""
+    job = Job(id=job_id, status=status, progress=progress, message=message, **kwargs)
     jobs[job_id] = job
-    _persist(job)          # 初始狀態寫入 DB
+    _persist(job)
     return job
 
 
@@ -112,11 +113,10 @@ def prune_jobs(
     now: datetime | None = None,
     remove_files: bool = True,
 ) -> list[str]:
-    """同時清理記憶體 + DB 中的過期任務"""
+    """Evict stale jobs from memory and delete them from the DB."""
     current_time = now or datetime.now(timezone.utc)
     cutoff = current_time - timedelta(seconds=ttl_seconds)
 
-    # 1. 清理記憶體
     stale_ids = [
         job_id
         for job_id, job in list(jobs.items())
@@ -131,12 +131,14 @@ def prune_jobs(
             except OSError:
                 pass
 
-    # 2. 清理 DB
     from backend.models.database import JobRecord, SessionLocal
     with SessionLocal() as session:
         session.query(JobRecord).filter(
-            (JobRecord.updated_at < cutoff) |
-            ((JobRecord.status.in_(["done", "failed"])) & (JobRecord.created_at < cutoff))
+            (JobRecord.updated_at < cutoff)
+            | (
+                JobRecord.status.in_(["done", "failed"])
+                & (JobRecord.created_at < cutoff)
+            )
         ).delete()
         session.commit()
 

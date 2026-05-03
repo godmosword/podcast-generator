@@ -74,3 +74,5 @@ class JobSnapshot(BaseModel):
     message: str
     file_url: str | None = None
     error: str | None = None
+    retry_count: int = 0
+    last_provider: str | None = None
