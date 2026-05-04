@@ -68,6 +68,15 @@ export type JobEvent = {
 
 export type JobSnapshot = JobEvent;
 
+function extractDetail(detail: unknown): string {
+  if (Array.isArray(detail)) {
+    return detail
+      .map((e: unknown) => (typeof e === "object" && e !== null && "msg" in e ? String((e as { msg: unknown }).msg) : "Validation error"))
+      .join("; ");
+  }
+  return typeof detail === "string" ? detail : "Generate request failed.";
+}
+
 export async function startGenerate(payload: GeneratePayload): Promise<GenerateResponse> {
   const response = await fetch(apiUrl("/api/generate"), {
     method: "POST",
@@ -90,8 +99,8 @@ export async function startGenerate(payload: GeneratePayload): Promise<GenerateR
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.detail ?? "Generate request failed.");
+    const body = await response.json().catch(() => null);
+    throw new Error(extractDetail(body?.detail));
   }
 
   return response.json();

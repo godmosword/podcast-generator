@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -47,7 +48,15 @@ class AudioSettings(BaseModel):
 
 
 class GenerateRequest(BaseModel):
-    script: str = Field(min_length=1, max_length=50000)
+    script: str = Field(min_length=1)
+
+    @field_validator("script")
+    @classmethod
+    def check_script_length(cls, v: str) -> str:
+        max_len = int(os.getenv("MAX_SCRIPT_LENGTH", "50000"))
+        if len(v) > max_len:
+            raise ValueError(f"腳本超過字數上限（{max_len} 字）。")
+        return v
     host_count: int = Field(default=1, ge=1, le=4)
     voice_assignments: list[VoiceAssignment] = Field(default_factory=list, max_length=4)
     audio: AudioSettings = Field(default_factory=AudioSettings)

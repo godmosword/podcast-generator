@@ -126,10 +126,8 @@ def prune_jobs(
     for job_id in stale_ids:
         job = jobs.pop(job_id, None)
         if remove_files and job and job.output_path:
-            try:
-                job.output_path.unlink(missing_ok=True)
-            except OSError:
-                pass
+            from backend.utils.storage import get_storage
+            get_storage().delete(str(job.output_path))
 
     from backend.models.database import JobRecord, SessionLocal
     with SessionLocal() as session:

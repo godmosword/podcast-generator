@@ -211,7 +211,9 @@ async def _run_job(job_id: str, request: GenerateRequest) -> None:
                 job_id=job_id,
                 progress=publish,
             )
-            job.output_path = Path(result)
+            from backend.utils.storage import get_storage
+            stored_key = get_storage().save(Path(result), job_id)
+            job.output_path = Path(stored_key)
             await job.publish("done", 100, "Done.", file_url=f"/api/files/{job_id}")
             return  # success — stop trying more providers
         except Exception as exc:
